@@ -91,6 +91,9 @@ etf-intelligence/
 │   └── package.json
 │
 ├── backend/
+│   ├── config/
+│   │   └── settings.py       # tickers, target allocations, intervals
+│   │
 │   ├── ingestion/
 │   │   ├── fetcher.py        # pulls minute level bid/ask/volume from yfinance
 │   │   ├── validator.py      # handles missing, stale, bad data
@@ -114,9 +117,6 @@ etf-intelligence/
 │   │   └── profiler.py       # measures ingestion throughput + query latency
 │   │
 │   └── main.py               # FastAPI endpoints
-│
-├── config/
-│   └── settings.py           # tickers, target allocations, intervals
 │
 ├── docs/
 │   ├── MASTER_PLAN.md        # this file
@@ -142,7 +142,7 @@ Each phase is independently shippable. Never move to the next phase until the cu
 
 | Phase | What | Files | Timeline |
 |-------|------|-------|----------|
-| 1 | Foundation | `schema.sql`, `database.py`, `settings.py` | Week 1 |
+| 1 | Foundation | `schema.sql`, `database.py`, `backend/config/settings.py` | Week 1 |
 | 2 | Data ingestion | `fetcher.py`, `validator.py`, `scheduler.py` | Week 2 |
 | 3 | Storage + summaries | `summarizer.py` | Week 3 |
 | 4 | Core rebalancer | `allocator.py` | Week 4 |
@@ -163,7 +163,7 @@ Each phase is independently shippable. Never move to the next phase until the cu
 ### Phase 1 — Foundation
 **Goal:** Database running, schema loaded, settings defined, connection verified.
 
-#### File 1: `config/settings.py`
+#### File 1: `backend/config/settings.py`
 
 **Prompt:**
 ```

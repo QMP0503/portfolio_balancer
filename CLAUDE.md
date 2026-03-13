@@ -69,7 +69,7 @@ Each file has one job. Never put logic in the wrong layer.
 | `rebalancer/` | Allocation algorithm and timing only |
 | `benchmark/` | Profiling and latency measurement only |
 | `main.py` | Routing only — no business logic |
-| `config/` | Settings and constants only |
+| `backend/config/` | Settings and constants only |
 
 ---
 
