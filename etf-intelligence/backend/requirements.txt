@@ -5,3 +5,5 @@ sqlalchemy[asyncio]
 python-dotenv
 yfinance
 apscheduler
+pytest
+pytest-asyncio

@@ -154,6 +154,42 @@ Each phase is independently shippable. Never move to the next phase until the cu
 
 ---
 
+## Testing Strategy
+
+### Framework
+`pytest` + `pytest-asyncio`. Both installed in `requirements.txt` from Phase 1.
+
+### When to Write Tests
+Write tests the same day as the file. Never defer.
+
+### What Gets Tested and When
+
+| Phase | File | Test file | Type |
+|-------|------|-----------|------|
+| 2 | `ingestion/validator.py` | `tests/ingestion/test_validator.py` | Pure function — plain pytest |
+| 4 | `rebalancer/allocator.py` | `tests/rebalancer/test_allocator.py` | Pure function — plain pytest |
+| 5+ | `storage/database.py`, `main.py` | `tests/test_api.py` | FastAPI TestClient + test DB |
+
+### Test Directory Structure
+```
+backend/
+└── tests/
+    ├── __init__.py
+    ├── ingestion/
+    │   ├── __init__.py
+    │   └── test_validator.py
+    └── rebalancer/
+        ├── __init__.py
+        └── test_allocator.py
+```
+
+### Rules
+- Pure functions: no mocking, no DB — just call the function with inputs and assert outputs
+- DB/API tests: use FastAPI `TestClient` with a real test database (not mocks)
+- Do not test async DB code before Phase 5 — schema is not stable yet
+
+---
+
 ## Phase Implementation Guide
 
 > One file at a time. Verify before moving on. Commit after every working file.

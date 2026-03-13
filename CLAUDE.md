@@ -56,6 +56,14 @@ patterns, and tells the user exactly what to buy on payday.
 - All API calls go through a dedicated `src/api.js` file
 - Mobile responsive by default — test on small screen first
 
+### Testing
+- Framework: `pytest` + `pytest-asyncio`
+- Write tests the same day as the file — never defer to a later phase
+- Pure functions (`validator.py`, `allocator.py`) get tested immediately with plain pytest
+- Async DB/API layers use FastAPI `TestClient` + a test database — set up in Phase 5 when schema is stable
+- Test files live in `backend/tests/` mirroring the module structure
+- One test file per module: `tests/ingestion/test_validator.py`, `tests/rebalancer/test_allocator.py`
+
 ---
 
 ## File Ownership
