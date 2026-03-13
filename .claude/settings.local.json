@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import sys; data = open\\('/c/Users/quang/portfolio_balancer/MASTER_PLAN.md.pdf','rb'\\).read\\(\\); text = data.decode\\('latin-1'\\); lines = [l.strip\\(\\) for l in text.split\\('\\\\n'\\) if l.strip\\(\\) and not l.strip\\(\\).startswith\\('%'\\) and len\\(l.strip\\(\\)\\) > 3]; print\\('\\\\n'.join\\(lines[:200]\\)\\)\" 2>&1 | head -150)",
+      "Bash(git)",
+      "Bash(git add:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
