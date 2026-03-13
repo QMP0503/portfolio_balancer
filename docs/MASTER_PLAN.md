@@ -227,10 +227,12 @@ After creating tables:
 No SELECT *, no inline SQL elsewhere. This file is the single source of truth for schema.
 ```
 
+> Updated 2026-03-12: Changed `-U quang` to `-U postgres` — .env sets `POSTGRES_USER=postgres`, not `quang`.
+
 **Verify:**
 ```bash
-docker compose exec db psql -U quang -d etf_db -f /app/storage/schema.sql
-docker compose exec db psql -U quang -d etf_db -c "\dt"
+docker compose exec db psql -U postgres -d etf_db -f /app/storage/schema.sql
+docker compose exec db psql -U postgres -d etf_db -c "\dt"
 ```
 Should show all 5 tables.
 
@@ -571,10 +573,10 @@ Write this yourself — it's your voice. Use benchmark numbers from Phase 8. Str
 docker compose ps
 
 # Check DB tables
-docker compose exec db psql -U quang -d etf_db -c "\dt"
+docker compose exec db psql -U postgres -d etf_db -c "\dt"
 
 # Count quotes in DB
-docker compose exec db psql -U quang -d etf_db -c "SELECT COUNT(*) FROM quotes;"
+docker compose exec db psql -U postgres -d etf_db -c "SELECT COUNT(*) FROM quotes;"
 
 # Tail backend logs
 docker compose logs -f backend
@@ -583,7 +585,7 @@ docker compose logs -f backend
 docker compose restart backend
 
 # Connect to DB directly
-docker compose exec db psql -U quang -d etf_db
+docker compose exec db psql -U postgres -d etf_db
 ```
 
 ---
@@ -803,7 +805,7 @@ ZEM spread currently 2.1x wider than normal ⚠️
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1 — Foundation | 🔲 Not started | |
+| 1 — Foundation | ✅ Complete | settings.py, schema.sql, database.py, main.py |
 | 2 — Ingestion | 🔲 Not started | |
 | 3 — Storage | 🔲 Not started | |
 | 4 — Rebalancer | 🔲 Not started | |

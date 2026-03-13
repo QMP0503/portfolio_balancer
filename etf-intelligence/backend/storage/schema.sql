@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS daily_summaries (
 
 -- Prevent duplicate summary rows; also used by INSERT ... ON CONFLICT in summarizer.py
 ALTER TABLE daily_summaries
-    ADD CONSTRAINT IF NOT EXISTS daily_summaries_date_ticker_key
+    ADD CONSTRAINT daily_summaries_date_ticker_key
     UNIQUE (date, ticker);
 
 -- -----------------------------------------------------------------------------
