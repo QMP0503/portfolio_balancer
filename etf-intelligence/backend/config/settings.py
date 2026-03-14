@@ -17,8 +17,8 @@ TICKERS: list[str] = ["HXQ.TO", "VFV.TO", "VCN.TO", "ZEM.TO"]
 
 # Target allocation percentages (must sum to 100)
 TARGET_ALLOCATIONS: dict[str, float] = {
-    "HXQ.TO": 35.0,
-    "VFV.TO": 40.0,
+    "HXQ.TO": 40.0,
+    "VFV.TO": 35.0,
     "VCN.TO": 15.0,
     "ZEM.TO": 10.0,
 }

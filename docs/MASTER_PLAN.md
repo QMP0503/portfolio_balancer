@@ -18,8 +18,8 @@ This tool solves all of that.
 
 | ETF | Name | Target Allocation | Goal |
 |-----|------|------------------|------|
-| HXQ | Horizons Nasdaq 100 | 35% | Retirement (TFSA) |
-| VFV | Vanguard S&P 500 | 40% | Retirement (TFSA) |
+| HXQ | Horizons Nasdaq 100 | 40% | Retirement (TFSA) |
+| VFV | Vanguard S&P 500 | 35% | Retirement (TFSA) |
 | VCN | Vanguard Canada | 15% | Retirement (TFSA) |
 | ZEM | BMO Emerging Markets | 10% | Retirement (TFSA) |
 
@@ -413,12 +413,35 @@ ZEM spread currently 2.1x wider than normal ⚠️
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1 — Foundation | ✅ Done | |
-| 2 — Ingestion | ✅ Done | |
-| 3 — Storage | 🔄 In progress | |
+| 1 — Foundation | ✅ Done | settings.py, schema.sql, database.py, main.py skeleton committed in d9c055a and ecbfdc4. |
+| 2 — Ingestion | ✅ Done | fetcher.py, validator.py, scheduler.py committed in 053ab80 and 5c3a6d1; test_validator.py included. |
+| 3 — Storage | 🔧 In progress | summarizer.py exists on disk but is NOT yet committed to git — schema.sql and database.py are committed. |
 | 4 — Rebalancer + Gmail parser | 🔲 Not started | |
 | 5 — API | 🔲 Not started | |
 | 6 — Frontend | 🔲 Not started | |
 | 7 — Analysis | 🔲 Not started | |
 | 8 — Deploy + README | 🔲 Not started | |
-| 9 — C++ Simulator | 🔲 Not started | Shopify internship |
+| 9 — C++ Simulator | 🔲 Not started | Shopify internship. |
+
+---
+
+## Agent Notes
+
+_Added 2026-03-14 by master-plan-updater agent._
+
+**1. summarizer.py is untracked in git.**
+The file exists at `etf-intelligence/backend/storage/summarizer.py` and its `__pycache__` confirms it has been executed, but it has never been committed. Phase 3 cannot be marked complete until this file is committed. Recommend: `git add etf-intelligence/backend/storage/summarizer.py && git commit -m "phase3: add summarizer.py"`.
+
+**2. Schema deviations from the Data Architecture section (user-reported, not yet reflected in plan).**
+The following changes were made during Phase 2 and Phase 3 implementation but are not documented in the "What Gets Stored" section above:
+- `quotes` table: a `price` column was added (committed in 5c3a6d1 "built fetcher.py and add price to database").
+- `transactions` table: `price_paid` was replaced by `fill_price`, `predicted_spread`, `actual_spread`, and `slippage_vs_mid`.
+
+**3. TARGET_ALLOCATIONS deviate from plan document.**
+The user reports settings.py now has HXQ=40%, VFV=35%. The Data Architecture section and CLAUDE.md ETF table still show HXQ=35%, VFV=40%. These sections are protected from direct edits — confirm which is authoritative before updating the plan document.
+
+**4. scheduler.py cron behavior (user-reported, not verifiable from git message alone).**
+User reports APScheduler triggers `compute_daily_summary` at 16:01 ET daily; commit 053ab80 "finish phase 2" is the relevant commit, but the message does not confirm this detail. Recorded here for traceability.
+
+**5. validator.py rejection logic (user-reported).**
+User reports the relative spread threshold is `(ask - bid) / price > 2%`; committed in 053ab80. Not verifiable from the commit message alone — recorded here for traceability.

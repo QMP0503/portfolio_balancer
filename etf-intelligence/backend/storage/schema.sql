@@ -65,12 +65,15 @@ CREATE TABLE IF NOT EXISTS holdings (
 -- account must be one of the three registered account types.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS transactions (
-    id          SERIAL       PRIMARY KEY,
-    date        DATE         NOT NULL,
-    ticker      TEXT         NOT NULL,
-    shares      NUMERIC(12,4),
-    price_paid  NUMERIC(10,4),
-    account     TEXT         CHECK (account IN ('TFSA', 'FHSA', 'RRSP'))
+    id                SERIAL       PRIMARY KEY,
+    date              DATE         NOT NULL,
+    ticker            TEXT         NOT NULL,
+    shares            NUMERIC(12,4),
+    fill_price        NUMERIC(10,4),  -- actual fill price from Wealthsimple email
+    predicted_spread  NUMERIC(10,4),  -- spread from quotes table at fill time
+    actual_spread     NUMERIC(10,4),  -- ask - bid from quotes table at fill time
+    slippage_vs_mid   NUMERIC(10,4),  -- fill_price - midpoint at fill time
+    account           TEXT         CHECK (account IN ('TFSA', 'FHSA', 'RRSP'))
 );
 
 -- -----------------------------------------------------------------------------
@@ -86,8 +89,8 @@ CREATE TABLE IF NOT EXISTS etf_config (
 
 -- Seed target allocations — INSERT OR IGNORE pattern for idempotency
 INSERT INTO etf_config (ticker, target_pct, goal) VALUES
-    ('HXQ.TO', 35.0, 'Retirement (TFSA)'),
-    ('VFV.TO', 40.0, 'Retirement (TFSA)'),
+    ('HXQ.TO', 40.0, 'Retirement (TFSA)'),
+    ('VFV.TO', 35.0, 'Retirement (TFSA)'),
     ('VCN.TO', 15.0, 'Retirement (TFSA)'),
     ('ZEM.TO', 10.0, 'Retirement (TFSA)')
 ON CONFLICT (ticker) DO NOTHING;

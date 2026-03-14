@@ -16,6 +16,7 @@ from config.settings import (
 from ingestion.fetcher import fetch_all
 from ingestion.validator import validate_quote
 from storage.database import insert_quotes
+from storage.summarizer import compute_daily_summary
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,13 @@ def _within_market_hours() -> bool:
     return market_open <= now < market_close
 
 
+async def _run_daily_summary() -> None:
+    """Trigger end-of-day summary computation for today."""
+    tz = pytz.timezone(TIMEZONE)
+    today = datetime.now(tz).date()
+    await compute_daily_summary(today)
+
+
 def start_scheduler() -> None:
     """Start the APScheduler with market-open and market-close cron jobs.
 
@@ -78,6 +86,13 @@ def start_scheduler() -> None:
         hour=_close_hour,
         minute=_close_minute,
         id="market_close",
+    )
+    _scheduler.add_job(
+        _run_daily_summary,
+        trigger="cron",
+        hour=_close_hour,
+        minute=_close_minute + 1,
+        id="daily_summary",
     )
 
     _scheduler.start()
