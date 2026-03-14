@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from config.settings import TICKERS
+from ingestion.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,7 +31,9 @@ class HealthResponse(BaseModel):
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown events."""
     logger.info("ETF Intelligence System starting")
+    start_scheduler()
     yield
+    stop_scheduler()
 
 
 app = FastAPI(
