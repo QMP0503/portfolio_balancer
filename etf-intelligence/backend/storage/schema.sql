@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS quotes (
     bid     NUMERIC(10,4),
     ask     NUMERIC(10,4),
     spread  NUMERIC(10,4),
+    price   NUMERIC(10,4),
     volume  BIGINT
 );
 
