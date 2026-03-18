@@ -162,9 +162,10 @@ Each phase is independently shippable. Never move to the next phase until the cu
 | 1 | Foundation | `schema.sql`, `database.py`, `settings.py` | ✅ Done |
 | 2 | Data ingestion | `fetcher.py`, `validator.py`, `scheduler.py` | ✅ Done |
 | 3 | Storage + summaries | `summarizer.py` | 🔄 In progress |
-| 4 | Rebalancer + transaction logging | `allocator.py`, `timing.py`, `gmail_parser.py` | 🔲 Not started |
+| 4 | Rebalancer | `allocator.py`, `timing.py` | 🔲 Not started |
 | 5 | API layer | `main.py` endpoints | 🔲 Not started |
 | 6 | React frontend | `Dashboard`, `Allocation`, `BuyRecommendation`, `ExecutionBenchmark` | 🔲 Not started |
+| 6.5 | Gmail transaction parser | `gmail_parser.py` | 🔲 Not started — deferred after frontend; requires Gmail API OAuth setup |
 | 7 | Pattern analysis | `spread.py`, `volatility.py`, `anomaly.py` | 🔲 Not started |
 | 8 | Deploy + README | Docker, Nginx, benchmark results | 🔲 Not started |
 | 9 | C++ execution simulator | `order_book.cpp`, `replay.cpp`, Python vs C++ benchmarks | 🔲 Not started — Shopify internship |
@@ -416,7 +417,7 @@ ZEM spread currently 2.1x wider than normal ⚠️
 | 1 — Foundation | ✅ Done | settings.py, schema.sql, database.py, main.py skeleton committed in d9c055a and ecbfdc4. |
 | 2 — Ingestion | ✅ Done | fetcher.py, validator.py, scheduler.py committed in 053ab80 and 5c3a6d1; test_validator.py included. |
 | 3 — Storage | 🔧 In progress | summarizer.py exists on disk but is NOT yet committed to git — schema.sql and database.py are committed. |
-| 4 — Rebalancer + Gmail parser | 🔲 Not started | |
+| 4 — Rebalancer | 🔧 In progress | allocator.py + test_allocator.py done. timing.py not started. `gmail_parser.py` deferred to Phase 6.5. |
 | 5 — API | 🔲 Not started | |
 | 6 — Frontend | 🔲 Not started | |
 | 7 — Analysis | 🔲 Not started | |
