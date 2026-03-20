@@ -6,6 +6,7 @@ No business logic lives here — only connection management and data retrieval.
 """
 
 from collections.abc import AsyncGenerator
+from datetime import date
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -126,7 +127,7 @@ async def upsert_holding(ticker: str, shares: float) -> None:
         await session.commit()
 
 
-async def fetch_daily_summary(target_date: str) -> list[dict]:
+async def fetch_daily_summary(target_date: date) -> list[dict]:
     """Return daily summary rows for all tickers on a given date.
 
     Args:

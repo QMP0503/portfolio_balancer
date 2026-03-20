@@ -25,7 +25,7 @@ class SummaryResponse(BaseModel):
 @router.get("/{target_date}", response_model=list[SummaryResponse])
 async def get_summary(target_date: date, _: dict = Depends(get_current_user)) -> list[SummaryResponse]:
     """Return daily spread summaries for all tickers on a given date."""
-    rows = await fetch_daily_summary(str(target_date))
+    rows = await fetch_daily_summary(target_date)
     if not rows:
         raise HTTPException(status_code=404, detail=f"No summary data for {target_date}")
     return [SummaryResponse(**row) for row in rows]

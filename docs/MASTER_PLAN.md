@@ -437,7 +437,7 @@ ZEM spread currently 2.1x wider than normal ⚠️
 | 2 — Ingestion | ✅ Done | fetcher.py, validator.py, scheduler.py committed in 053ab80 and 5c3a6d1; test_validator.py included. |
 | 3 — Storage | ✅ Done | summarizer.py committed in 8c5b9ed. compute_daily_summary + backfill_summaries working. |
 | 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed in 47e0f9f and d5d6913. 15 tests passing. `gmail_parser.py` deferred to Phase 6.5. |
-| 5 — API | ✅ Done | 6 endpoints in main.py + 3 new query helpers in database.py committed. |
+| 5 — API | ✅ Done | 6 endpoints across 4 routers + JWT auth + 23 integration tests passing. |
 | 6 — Frontend | 🔲 Not started | |
 | 7 — Analysis | 🔲 Not started | |
 | 8 — Deploy + README | 🔲 Not started | |
