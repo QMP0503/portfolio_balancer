@@ -99,9 +99,13 @@ etf-intelligence/
 │   │   └── scheduler.py      # runs fetcher every minute during market hours
 │   │
 │   ├── storage/
-│   │   ├── database.py       # TimescaleDB connection + query helpers
+│   │   ├── database.py       # engine + session factory only (no query functions)
 │   │   ├── schema.sql        # hypertable definitions
-│   │   └── summarizer.py     # pre-computes daily summaries from raw data
+│   │   ├── summarizer.py     # pre-computes daily summaries from raw data
+│   │   ├── quotes.py         # all queries for quotes table
+│   │   ├── portfolios.py     # all queries for portfolios + portfolio_allocations
+│   │   ├── holdings.py       # all queries for holdings table
+│   │   └── summaries.py      # all queries for daily_summaries table
 │   │
 │   ├── analysis/
 │   │   ├── spread.py         # intraday spread patterns by time of day
@@ -165,11 +169,12 @@ Each phase is independently shippable. Never move to the next phase until the cu
 | 2 | Data ingestion | `fetcher.py`, `validator.py`, `scheduler.py` | ✅ Done |
 | 3 | Storage + summaries | `summarizer.py` | ✅ Done |
 | 4 | Rebalancer | `allocator.py`, `timing.py` | ✅ Done |
-| 5 | API layer | `main.py` endpoints | 🔲 Not started |
-| 6 | React frontend | `Dashboard`, `Allocation`, `BuyRecommendation`, `ExecutionBenchmark` | 🔲 Not started |
+| 5 | API layer | 6 routers, JWT cookies, 36 tests | ✅ Done |
+| 6 | React frontend | `Dashboard`, `Allocation`, `BuyRecommendation`, `ExecutionTiming`, `Settings`, `AddPortfolioModal` | 🔲 In progress |
 | 8 | Deploy + README | Docker, Nginx, benchmark results | 🔲 Not started — **deploy target, unlocks data collection** |
-| 6.5 | Gmail transaction parser | `gmail_parser.py` | 🔲 Not started — deferred after deploy; requires Gmail API OAuth setup |
-| 7 | Pattern analysis | `spread.py`, `volatility.py`, `anomaly.py` | 🔲 Not started — deferred until sufficient historical data exists (weeks of collection) |
+| 6.5 | Gmail transaction parser | `gmail_parser.py` | 🔲 Deferred — after deploy; requires Gmail API OAuth setup |
+| 6.6 | First-login setup wizard | Onboarding flow for new users | 🔲 Deferred — add after deploy when missing UX is clear |
+| 7 | Pattern analysis | `spread.py`, `volatility.py`, `anomaly.py` | 🔲 Deferred — needs weeks of collected data |
 | 9 | C++ execution simulator | `order_book.cpp`, `replay.cpp`, Python vs C++ benchmarks | 🔲 Not started — Shopify internship |
 
 ---
@@ -231,8 +236,11 @@ Note: holdings and transactions will gain a user_id FK when multi-user is enable
 ```
 
 ### Auth
-JWT tokens. Default expiry 1 day, 30 days with "remember me".
-Secret and algorithm stored in `.env` as `JWT_SECRET` and `JWT_ALGORITHM`.
+JWT stored in **httpOnly cookie** (SameSite=strict, not Bearer header).
+Default expiry 1 day, 30 days with "remember me".
+Secret stored in `.env` as `JWT_SECRET`. Algorithm HS256.
+Endpoints: POST /auth/login, /auth/register, /auth/logout.
+get_current_user reads from Cookie header — no Authorization header needed.
 
 ### Why TimescaleDB Not SQLite
 
@@ -437,10 +445,12 @@ ZEM spread currently 2.1x wider than normal ⚠️
 | 2 — Ingestion | ✅ Done | fetcher.py, validator.py, scheduler.py committed in 053ab80 and 5c3a6d1; test_validator.py included. |
 | 3 — Storage | ✅ Done | summarizer.py committed in 8c5b9ed. compute_daily_summary + backfill_summaries working. |
 | 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed in 47e0f9f and d5d6913. 15 tests passing. `gmail_parser.py` deferred to Phase 6.5. |
-| 5 — API | ✅ Done | 6 endpoints across 4 routers + JWT auth + 23 integration tests passing. |
-| 6 — Frontend | 🔲 Not started | |
-| 7 — Analysis | 🔲 Not started | |
-| 8 — Deploy + README | 🔲 Not started | |
+| 5 — API | ✅ Done | JWT httpOnly cookies, 6 routers (auth/quotes/portfolios/holdings/rebalancer/summaries), 36 tests. Schema refactored: etf_config → per-user portfolios + portfolio_allocations. storage/ split into one file per domain. Committed abaaff5. |
+| 6 — Frontend | 🔲 In progress | React + Vite + Tailwind (dark mode class strategy) + Recharts. Plan approved 2026-03-19. |
+| 6.5 — Gmail parser | 🔲 Deferred | After deploy. Requires Gmail API OAuth setup. |
+| 6.6 — Setup wizard | 🔲 Deferred | First-login onboarding flow. Build after deploy when missing UX is clearer. |
+| 7 — Analysis | 🔲 Deferred | Needs weeks of collected data to be meaningful. |
+| 8 — Deploy + README | 🔲 Not started | **Priority after Phase 6.** Docker + Nginx on Linux server. |
 | 9 — C++ Simulator | 🔲 Not started | Shopify internship. |
 
 ---
