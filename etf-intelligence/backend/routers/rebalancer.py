@@ -1,8 +1,9 @@
 """routers/rebalancer.py — Buy recommendation and execution timing endpoints."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from auth import get_current_user
 from config.settings import TARGET_ALLOCATIONS, TICKERS
 from storage.database import fetch_holdings, fetch_latest_quotes
 from rebalancer.allocator import BuyRecommendation, HoldingSnapshot, compute_buy_recommendations
@@ -21,7 +22,7 @@ class RebalancerResponse(BaseModel):
 
 
 @router.get("/recommend", response_model=RebalancerResponse)
-async def get_recommendations(contribution_cad: float) -> RebalancerResponse:
+async def get_recommendations(contribution_cad: float, _: dict = Depends(get_current_user)) -> RebalancerResponse:
     """Return buy recommendations for a given CAD contribution amount.
 
     Reads current holdings and latest prices from DB, then runs
@@ -56,6 +57,6 @@ async def get_recommendations(contribution_cad: float) -> RebalancerResponse:
 
 
 @router.get("/timing", response_model=list[ExecutionWindow])
-async def get_timing() -> list[ExecutionWindow]:
+async def get_timing(_: dict = Depends(get_current_user)) -> list[ExecutionWindow]:
     """Return the best execution window for each tracked ETF."""
     return get_execution_windows()

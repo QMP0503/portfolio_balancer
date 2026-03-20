@@ -215,7 +215,24 @@ Config (your target allocations)
 ├── ticker
 ├── target percentage
 └── goal
+
+Users (authentication — multi-user ready)
+├── id (serial primary key)
+├── email (unique login identifier)
+├── first_name
+├── last_name
+├── hashed_password (bcrypt)
+├── is_active (disable without deleting)
+├── role (admin | user)
+├── created_at
+└── updated_at
+
+Note: holdings and transactions will gain a user_id FK when multi-user is enabled post-graduation.
 ```
+
+### Auth
+JWT tokens. Default expiry 1 day, 30 days with "remember me".
+Secret and algorithm stored in `.env` as `JWT_SECRET` and `JWT_ALGORITHM`.
 
 ### Why TimescaleDB Not SQLite
 

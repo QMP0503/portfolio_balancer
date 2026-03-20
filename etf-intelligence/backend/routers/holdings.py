@@ -1,8 +1,9 @@
 """routers/holdings.py — Holdings read and update endpoints."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from auth import get_current_user
 from config.settings import TICKERS
 from storage.database import fetch_holdings, upsert_holding
 
@@ -23,14 +24,14 @@ class HoldingUpdateRequest(BaseModel):
 
 
 @router.get("", response_model=list[HoldingResponse])
-async def get_holdings() -> list[HoldingResponse]:
+async def get_holdings(_: dict = Depends(get_current_user)) -> list[HoldingResponse]:
     """Return current share counts for all tracked ETFs."""
     rows = await fetch_holdings()
     return [HoldingResponse(**row) for row in rows]
 
 
 @router.put("/{ticker}", response_model=HoldingResponse)
-async def update_holding(ticker: str, body: HoldingUpdateRequest) -> HoldingResponse:
+async def update_holding(ticker: str, body: HoldingUpdateRequest, _: dict = Depends(get_current_user)) -> HoldingResponse:
     """Set the share count for a ticker after a payday buy.
 
     Replaces the existing value — pass the new total, not a delta.

@@ -6,5 +6,9 @@ python-dotenv
 yfinance
 apscheduler
 pytz
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+email-validator
 pytest
 pytest-asyncio

@@ -1,8 +1,9 @@
 """routers/quotes.py — Market quote endpoints."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from auth import get_current_user
 from storage.database import fetch_latest_quotes
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
@@ -20,7 +21,7 @@ class QuoteResponse(BaseModel):
 
 
 @router.get("/latest", response_model=list[QuoteResponse])
-async def get_latest_quotes() -> list[QuoteResponse]:
+async def get_latest_quotes(_: dict = Depends(get_current_user)) -> list[QuoteResponse]:
     """Return the most recent stored quote for each tracked ETF."""
     rows = await fetch_latest_quotes()
     return [QuoteResponse(**row) for row in rows]

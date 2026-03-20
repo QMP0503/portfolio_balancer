@@ -94,3 +94,20 @@ INSERT INTO etf_config (ticker, target_pct, goal) VALUES
     ('VCN.TO', 15.0, 'Retirement (TFSA)'),
     ('ZEM.TO', 10.0, 'Retirement (TFSA)')
 ON CONFLICT (ticker) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 6. users
+-- Authentication table. Multi-user ready — holdings and transactions
+-- will gain a user_id FK here when multi-user support is enabled.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS users (
+    id               SERIAL       PRIMARY KEY,
+    email            TEXT         NOT NULL UNIQUE,
+    first_name       TEXT         NOT NULL,
+    last_name        TEXT         NOT NULL,
+    hashed_password  TEXT         NOT NULL,
+    is_active        BOOLEAN      DEFAULT TRUE,
+    role             TEXT         DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+    created_at       TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ  DEFAULT NOW()
+);

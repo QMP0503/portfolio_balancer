@@ -31,6 +31,12 @@ TIMEZONE: str = "America/Toronto"
 # How often the ingestion scheduler runs
 FETCH_INTERVAL_SECONDS: int = 60
 
+# JWT authentication
+JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
+JWT_ALGORITHM: str = "HS256"
+JWT_EXPIRY_DAYS: int = 1        # default token lifetime
+JWT_REMEMBER_ME_DAYS: int = 30  # lifetime when user selects "remember me"
+
 # Database — built from individual env vars if DATABASE_URL is not set directly
 DATABASE_URL: str = os.getenv("DATABASE_URL") or (
     "postgresql+asyncpg://"
