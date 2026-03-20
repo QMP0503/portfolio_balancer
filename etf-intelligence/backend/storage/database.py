@@ -84,6 +84,71 @@ async def insert_quotes(quotes: list[dict]) -> int:
     return len(rows)
 
 
+async def fetch_holdings() -> list[dict]:
+    """Return all rows from the holdings table.
+
+    Returns:
+        List of dicts with keys: ticker, shares, last_updated.
+    """
+    # Simple full-table read — holdings table has at most 4 rows
+    query = text("""
+        SELECT ticker, shares, last_updated
+        FROM holdings
+        ORDER BY ticker ASC
+    """)
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query)
+        return [row._asdict() for row in result.fetchall()]
+
+
+async def upsert_holding(ticker: str, shares: float) -> None:
+    """Insert or update the share count for a single ticker.
+
+    Uses ON CONFLICT to replace shares and refresh last_updated
+    so callers don't need to check whether the row exists first.
+
+    Args:
+        ticker: ETF ticker symbol, e.g. 'VFV.TO'.
+        shares: New total share count (replaces existing value).
+    """
+    # ON CONFLICT on the primary key updates in place
+    query = text("""
+        INSERT INTO holdings (ticker, shares, last_updated)
+        VALUES (:ticker, :shares, NOW())
+        ON CONFLICT (ticker) DO UPDATE
+            SET shares       = EXCLUDED.shares,
+                last_updated = NOW()
+    """)
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(query, {"ticker": ticker, "shares": shares})
+        await session.commit()
+
+
+async def fetch_daily_summary(target_date: str) -> list[dict]:
+    """Return daily summary rows for all tickers on a given date.
+
+    Args:
+        target_date: ISO date string, e.g. '2026-03-19'.
+
+    Returns:
+        List of dicts with keys: date, ticker, avg_spread, min_spread,
+        max_spread, volatility_score. Empty list if no data for that date.
+    """
+    # Parameterized date cast avoids injection while supporting ISO strings
+    query = text("""
+        SELECT date, ticker, avg_spread, min_spread, max_spread, volatility_score
+        FROM daily_summaries
+        WHERE date = :target_date
+        ORDER BY ticker ASC
+    """)
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query, {"target_date": target_date})
+        return [row._asdict() for row in result.fetchall()]
+
+
 async def fetch_quote_history(ticker: str, days: int) -> list[dict]:
     """Return minute-level quotes for a ticker over the past N days.
 
