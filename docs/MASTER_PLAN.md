@@ -417,7 +417,7 @@ ZEM spread currently 2.1x wider than normal ⚠️
 | 1 — Foundation | ✅ Done | settings.py, schema.sql, database.py, main.py skeleton committed in d9c055a and ecbfdc4. |
 | 2 — Ingestion | ✅ Done | fetcher.py, validator.py, scheduler.py committed in 053ab80 and 5c3a6d1; test_validator.py included. |
 | 3 — Storage | 🔧 In progress | summarizer.py exists on disk but is NOT yet committed to git — schema.sql and database.py are committed. |
-| 4 — Rebalancer | 🔧 In progress | allocator.py + test_allocator.py done. timing.py not started. `gmail_parser.py` deferred to Phase 6.5. |
+| 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed. 15 tests passing. `gmail_parser.py` deferred to Phase 6.5. |
 | 5 — API | 🔲 Not started | |
 | 6 — Frontend | 🔲 Not started | |
 | 7 — Analysis | 🔲 Not started | |
