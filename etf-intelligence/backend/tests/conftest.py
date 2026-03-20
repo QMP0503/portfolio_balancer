@@ -12,10 +12,14 @@ import asyncio
 import os
 import sys
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5433/etf_test",
-)
+_user = os.getenv("POSTGRES_USER", "postgres")
+_pass = os.getenv("POSTGRES_PASSWORD", "postgres")
+_host = os.getenv("POSTGRES_HOST", "db")
+_port = os.getenv("POSTGRES_PORT", "5432")
+
+# Force-override — DATABASE_URL may already be set by docker-compose pointing at etf_db.
+# Tests must always use etf_test so they never touch production data.
+os.environ["DATABASE_URL"] = f"postgresql+asyncpg://{_user}:{_pass}@{_host}:{_port}/etf_test"
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

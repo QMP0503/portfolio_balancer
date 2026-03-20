@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from ingestion.scheduler import start_scheduler, stop_scheduler
-from routers import auth, quotes, holdings, rebalancer, summaries
+from routers import auth, quotes, holdings, portfolios, rebalancer, summaries
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,12 +44,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(auth.router)
 app.include_router(quotes.router)
+app.include_router(portfolios.router)
 app.include_router(holdings.router)
 app.include_router(rebalancer.router)
 app.include_router(summaries.router)

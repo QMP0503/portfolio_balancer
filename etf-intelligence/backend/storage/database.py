@@ -31,6 +31,10 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+# ---------------------------------------------------------------------------
+# Quotes
+# ---------------------------------------------------------------------------
+
 async def fetch_latest_quotes() -> list[dict]:
     """Return the most recent quote row for each ticker.
 
@@ -85,71 +89,6 @@ async def insert_quotes(quotes: list[dict]) -> int:
     return len(rows)
 
 
-async def fetch_holdings() -> list[dict]:
-    """Return all rows from the holdings table.
-
-    Returns:
-        List of dicts with keys: ticker, shares, last_updated.
-    """
-    # Simple full-table read — holdings table has at most 4 rows
-    query = text("""
-        SELECT ticker, shares, last_updated
-        FROM holdings
-        ORDER BY ticker ASC
-    """)
-
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(query)
-        return [row._asdict() for row in result.fetchall()]
-
-
-async def upsert_holding(ticker: str, shares: float) -> None:
-    """Insert or update the share count for a single ticker.
-
-    Uses ON CONFLICT to replace shares and refresh last_updated
-    so callers don't need to check whether the row exists first.
-
-    Args:
-        ticker: ETF ticker symbol, e.g. 'VFV.TO'.
-        shares: New total share count (replaces existing value).
-    """
-    # ON CONFLICT on the primary key updates in place
-    query = text("""
-        INSERT INTO holdings (ticker, shares, last_updated)
-        VALUES (:ticker, :shares, NOW())
-        ON CONFLICT (ticker) DO UPDATE
-            SET shares       = EXCLUDED.shares,
-                last_updated = NOW()
-    """)
-
-    async with AsyncSessionLocal() as session:
-        await session.execute(query, {"ticker": ticker, "shares": shares})
-        await session.commit()
-
-
-async def fetch_daily_summary(target_date: date) -> list[dict]:
-    """Return daily summary rows for all tickers on a given date.
-
-    Args:
-        target_date: ISO date string, e.g. '2026-03-19'.
-
-    Returns:
-        List of dicts with keys: date, ticker, avg_spread, min_spread,
-        max_spread, volatility_score. Empty list if no data for that date.
-    """
-    # Parameterized date cast avoids injection while supporting ISO strings
-    query = text("""
-        SELECT date, ticker, avg_spread, min_spread, max_spread, volatility_score
-        FROM daily_summaries
-        WHERE date = :target_date
-        ORDER BY ticker ASC
-    """)
-
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(query, {"target_date": target_date})
-        return [row._asdict() for row in result.fetchall()]
-
-
 async def fetch_quote_history(ticker: str, days: int) -> list[dict]:
     """Return minute-level quotes for a ticker over the past N days.
 
@@ -179,3 +118,183 @@ async def fetch_quote_history(ticker: str, days: int) -> list[dict]:
     async with AsyncSessionLocal() as session:
         result = await session.execute(query, {"ticker": ticker, "days": days})
         return [row._asdict() for row in result.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Daily summaries
+# ---------------------------------------------------------------------------
+
+async def fetch_daily_summary(target_date: date) -> list[dict]:
+    """Return daily summary rows for all tickers on a given date.
+
+    Args:
+        target_date: The date to query.
+
+    Returns:
+        List of dicts with keys: date, ticker, avg_spread, min_spread,
+        max_spread, volatility_score. Empty list if no data for that date.
+    """
+    # Parameterized date avoids injection while supporting date objects
+    query = text("""
+        SELECT date, ticker, avg_spread, min_spread, max_spread, volatility_score
+        FROM daily_summaries
+        WHERE date = :target_date
+        ORDER BY ticker ASC
+    """)
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query, {"target_date": target_date})
+        return [row._asdict() for row in result.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Portfolios
+# ---------------------------------------------------------------------------
+
+async def fetch_portfolios(user_id: int) -> list[dict]:
+    """Return all portfolios belonging to a user.
+
+    Args:
+        user_id: Authenticated user's ID.
+
+    Returns:
+        List of dicts with keys: id, user_id, account_name, created_at.
+    """
+    # Filter strictly to the authenticated user — never return other users' portfolios
+    query = text("""
+        SELECT id, user_id, account_name, created_at
+        FROM portfolios
+        WHERE user_id = :user_id
+        ORDER BY created_at ASC
+    """)
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query, {"user_id": user_id})
+        return [row._asdict() for row in result.fetchall()]
+
+
+async def create_portfolio(user_id: int, account_name: str) -> dict:
+    """Create a new portfolio for a user and return the created row.
+
+    Args:
+        user_id:      Authenticated user's ID.
+        account_name: Free-text account label (e.g. 'TFSA', 'FHSA').
+
+    Returns:
+        Dict with keys: id, user_id, account_name, created_at.
+    """
+    # RETURNING so the caller has the new ID without a second query
+    query = text("""
+        INSERT INTO portfolios (user_id, account_name)
+        VALUES (:user_id, :account_name)
+        RETURNING id, user_id, account_name, created_at
+    """)
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query, {"user_id": user_id, "account_name": account_name})
+        await session.commit()
+        return result.fetchone()._asdict()
+
+
+async def fetch_portfolio_allocations(portfolio_id: int) -> list[dict]:
+    """Return all ETF allocations for a portfolio.
+
+    Args:
+        portfolio_id: The portfolio to query.
+
+    Returns:
+        List of dicts with keys: id, portfolio_id, ticker, target_pct, goal.
+    """
+    # Ordered by ticker for consistent API responses
+    query = text("""
+        SELECT id, portfolio_id, ticker, target_pct, goal
+        FROM portfolio_allocations
+        WHERE portfolio_id = :portfolio_id
+        ORDER BY ticker ASC
+    """)
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query, {"portfolio_id": portfolio_id})
+        return [row._asdict() for row in result.fetchall()]
+
+
+async def upsert_portfolio_allocation(
+    portfolio_id: int, ticker: str, target_pct: float, goal: str | None
+) -> None:
+    """Insert or update a single ETF allocation for a portfolio.
+
+    Args:
+        portfolio_id: The portfolio to update.
+        ticker:       ETF ticker symbol, e.g. 'VFV.TO'.
+        target_pct:   Target allocation percentage (0–100).
+        goal:         Optional goal description for the user.
+    """
+    # ON CONFLICT on the unique (portfolio_id, ticker) pair
+    query = text("""
+        INSERT INTO portfolio_allocations (portfolio_id, ticker, target_pct, goal)
+        VALUES (:portfolio_id, :ticker, :target_pct, :goal)
+        ON CONFLICT (portfolio_id, ticker) DO UPDATE
+            SET target_pct = EXCLUDED.target_pct,
+                goal       = EXCLUDED.goal
+    """)
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(query, {
+            "portfolio_id": portfolio_id,
+            "ticker": ticker,
+            "target_pct": target_pct,
+            "goal": goal,
+        })
+        await session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Holdings
+# ---------------------------------------------------------------------------
+
+async def fetch_holdings(portfolio_id: int) -> list[dict]:
+    """Return all holdings for a portfolio.
+
+    Args:
+        portfolio_id: The portfolio to query.
+
+    Returns:
+        List of dicts with keys: portfolio_id, ticker, shares, last_updated.
+    """
+    # Scoped strictly to one portfolio
+    query = text("""
+        SELECT portfolio_id, ticker, shares, last_updated
+        FROM holdings
+        WHERE portfolio_id = :portfolio_id
+        ORDER BY ticker ASC
+    """)
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(query, {"portfolio_id": portfolio_id})
+        return [row._asdict() for row in result.fetchall()]
+
+
+async def upsert_holding(portfolio_id: int, ticker: str, shares: float) -> None:
+    """Insert or update the share count for a ticker in a portfolio.
+
+    Args:
+        portfolio_id: The portfolio to update.
+        ticker:       ETF ticker symbol, e.g. 'VFV.TO'.
+        shares:       New total share count (replaces existing value).
+    """
+    # ON CONFLICT on composite PK (portfolio_id, ticker)
+    query = text("""
+        INSERT INTO holdings (portfolio_id, ticker, shares, last_updated)
+        VALUES (:portfolio_id, :ticker, :shares, NOW())
+        ON CONFLICT (portfolio_id, ticker) DO UPDATE
+            SET shares       = EXCLUDED.shares,
+                last_updated = NOW()
+    """)
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(query, {
+            "portfolio_id": portfolio_id,
+            "ticker": ticker,
+            "shares": shares,
+        })
+        await session.commit()

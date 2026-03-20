@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_current_user
-from config.settings import TARGET_ALLOCATIONS, TICKERS
-from storage.database import fetch_holdings, fetch_latest_quotes
+from config.settings import TICKERS
+from routers.portfolios import _assert_owns_portfolio
+from storage.database import fetch_holdings, fetch_latest_quotes, fetch_portfolio_allocations
 from rebalancer.allocator import BuyRecommendation, HoldingSnapshot, compute_buy_recommendations
 from rebalancer.timing import ExecutionWindow, get_execution_windows
 
@@ -21,31 +22,44 @@ class RebalancerResponse(BaseModel):
     leftover_cad: float
 
 
-@router.get("/recommend", response_model=RebalancerResponse)
-async def get_recommendations(contribution_cad: float, _: dict = Depends(get_current_user)) -> RebalancerResponse:
+@router.get("/{portfolio_id}/recommend", response_model=RebalancerResponse)
+async def get_recommendations(
+    portfolio_id: int,
+    contribution_cad: float,
+    user: dict = Depends(get_current_user),
+) -> RebalancerResponse:
     """Return buy recommendations for a given CAD contribution amount.
 
-    Reads current holdings and latest prices from DB, then runs
-    the deficit-based allocation algorithm.
+    Reads current holdings, target allocations, and latest prices from DB,
+    then runs the deficit-based allocation algorithm.
     """
     if contribution_cad <= 0:
         raise HTTPException(status_code=422, detail="contribution_cad must be positive")
 
-    holdings_rows = await fetch_holdings()
+    await _assert_owns_portfolio(portfolio_id, user["user_id"])
+
+    allocation_rows = await fetch_portfolio_allocations(portfolio_id)
+    if not allocation_rows:
+        raise HTTPException(status_code=422, detail="No allocations set for this portfolio")
+
+    target_allocations = {r["ticker"]: float(r["target_pct"]) for r in allocation_rows}
+
+    holdings_rows = await fetch_holdings(portfolio_id)
     quotes_rows = await fetch_latest_quotes()
     prices = {q["ticker"]: q["price"] for q in quotes_rows if q["price"] is not None}
     shares = {h["ticker"]: h["shares"] for h in holdings_rows}
 
+    # Only include tickers that have both a target allocation and a live price
     snapshots = [
-        HoldingSnapshot(ticker=t, shares=shares.get(t, 0.0), price=prices[t])
+        HoldingSnapshot(ticker=t, shares=float(shares.get(t, 0.0)), price=float(prices[t]))
         for t in TICKERS
-        if t in prices
+        if t in prices and t in target_allocations
     ]
 
     if not snapshots:
         raise HTTPException(status_code=503, detail="No price data available — market may be closed")
 
-    recs = compute_buy_recommendations(contribution_cad, snapshots, TARGET_ALLOCATIONS)
+    recs = compute_buy_recommendations(contribution_cad, snapshots, target_allocations)
     total_cost = sum(r.total_cost for r in recs)
 
     return RebalancerResponse(

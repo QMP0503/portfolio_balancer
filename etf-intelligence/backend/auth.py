@@ -6,15 +6,13 @@ No endpoint logic lives here.
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Cookie, HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from config.settings import JWT_ALGORITHM, JWT_EXPIRY_DAYS, JWT_REMEMBER_ME_DAYS, JWT_SECRET
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-bearer_scheme = HTTPBearer()
 
 
 def hash_password(plain: str) -> str:
@@ -59,30 +57,25 @@ def create_access_token(user_id: int, email: str, remember_me: bool = False) -> 
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-) -> dict:
-    """FastAPI dependency — decode and validate the Bearer token.
+def get_current_user(access_token: str | None = Cookie(default=None)) -> dict:
+    """FastAPI dependency — decode and validate the httpOnly cookie JWT.
 
-    Raises HTTP 401 if the token is missing, expired, or invalid.
+    Raises HTTP 401 if the cookie is missing, expired, or invalid.
 
     Args:
-        credentials: Injected by FastAPI from the Authorization header.
+        access_token: Injected by FastAPI from the httpOnly cookie.
 
     Returns:
         Dict with keys: user_id (int), email (str).
     """
-    token = credentials.credentials
+    if access_token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(access_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("sub")
         email = payload.get("email")
         if user_id is None or email is None:
             raise JWTError("Missing claims")
         return {"user_id": int(user_id), "email": email}
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")

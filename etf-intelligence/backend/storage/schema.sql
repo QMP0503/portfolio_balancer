@@ -50,55 +50,8 @@ ALTER TABLE daily_summaries
     UNIQUE (date, ticker);
 
 -- -----------------------------------------------------------------------------
--- 3. holdings
--- Current share counts per ETF. Updated manually after each payday buy.
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS holdings (
-    ticker        TEXT          PRIMARY KEY,
-    shares        NUMERIC(12,4),
-    last_updated  TIMESTAMPTZ   DEFAULT NOW()
-);
-
--- -----------------------------------------------------------------------------
--- 4. transactions
--- Immutable log of every buy. Never deleted.
--- account must be one of the three registered account types.
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS transactions (
-    id                SERIAL       PRIMARY KEY,
-    date              DATE         NOT NULL,
-    ticker            TEXT         NOT NULL,
-    shares            NUMERIC(12,4),
-    fill_price        NUMERIC(10,4),  -- actual fill price from Wealthsimple email
-    predicted_spread  NUMERIC(10,4),  -- spread from quotes table at fill time
-    actual_spread     NUMERIC(10,4),  -- ask - bid from quotes table at fill time
-    slippage_vs_mid   NUMERIC(10,4),  -- fill_price - midpoint at fill time
-    account           TEXT         CHECK (account IN ('TFSA', 'FHSA', 'RRSP'))
-);
-
--- -----------------------------------------------------------------------------
--- 5. etf_config
--- Target allocation percentages and investor goals per ETF.
--- Seeded below — application reads this instead of hardcoding values.
--- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS etf_config (
-    ticker      TEXT         PRIMARY KEY,
-    target_pct  NUMERIC(5,2),
-    goal        TEXT
-);
-
--- Seed target allocations — INSERT OR IGNORE pattern for idempotency
-INSERT INTO etf_config (ticker, target_pct, goal) VALUES
-    ('HXQ.TO', 40.0, 'Retirement (TFSA)'),
-    ('VFV.TO', 35.0, 'Retirement (TFSA)'),
-    ('VCN.TO', 15.0, 'Retirement (TFSA)'),
-    ('ZEM.TO', 10.0, 'Retirement (TFSA)')
-ON CONFLICT (ticker) DO NOTHING;
-
--- -----------------------------------------------------------------------------
--- 6. users
--- Authentication table. Multi-user ready — holdings and transactions
--- will gain a user_id FK here when multi-user support is enabled.
+-- 3. users
+-- Authentication table. Multi-user ready.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id               SERIAL       PRIMARY KEY,
@@ -110,4 +63,62 @@ CREATE TABLE IF NOT EXISTS users (
     role             TEXT         DEFAULT 'user' CHECK (role IN ('admin', 'user')),
     created_at       TIMESTAMPTZ  DEFAULT NOW(),
     updated_at       TIMESTAMPTZ  DEFAULT NOW()
+);
+
+-- -----------------------------------------------------------------------------
+-- 4. portfolios
+-- One row per account (TFSA, FHSA, RRSP, or any custom name).
+-- A user can have multiple portfolios. account_name is free text — the UI
+-- offers standard options (TFSA, FHSA, RRSP, Non-registered, Other).
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS portfolios (
+    id           SERIAL       PRIMARY KEY,
+    user_id      INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    account_name TEXT         NOT NULL,
+    created_at   TIMESTAMPTZ  DEFAULT NOW(),
+    UNIQUE (user_id, account_name)
+);
+
+-- -----------------------------------------------------------------------------
+-- 5. portfolio_allocations
+-- Target allocation % per ETF per portfolio.
+-- Replaces the old etf_config table — allocations are now per-user per-account.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS portfolio_allocations (
+    id           SERIAL        PRIMARY KEY,
+    portfolio_id INTEGER       NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    ticker       TEXT          NOT NULL,
+    target_pct   NUMERIC(5,2)  NOT NULL CHECK (target_pct > 0 AND target_pct <= 100),
+    goal         TEXT,
+    UNIQUE (portfolio_id, ticker)
+);
+
+-- -----------------------------------------------------------------------------
+-- 6. holdings
+-- Current share counts per ETF per portfolio.
+-- Updated manually after each payday buy.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS holdings (
+    portfolio_id  INTEGER       NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    ticker        TEXT          NOT NULL,
+    shares        NUMERIC(12,4) NOT NULL DEFAULT 0,
+    last_updated  TIMESTAMPTZ   DEFAULT NOW(),
+    PRIMARY KEY (portfolio_id, ticker)
+);
+
+-- -----------------------------------------------------------------------------
+-- 7. transactions
+-- Immutable log of every buy. Never deleted.
+-- Linked to a portfolio so account type is derived from portfolios.account_name.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS transactions (
+    id                SERIAL        PRIMARY KEY,
+    portfolio_id      INTEGER       NOT NULL REFERENCES portfolios(id),
+    date              DATE          NOT NULL,
+    ticker            TEXT          NOT NULL,
+    shares            NUMERIC(12,4),
+    fill_price        NUMERIC(10,4),  -- actual fill price from Wealthsimple email
+    predicted_spread  NUMERIC(10,4),  -- spread from quotes table at fill time
+    actual_spread     NUMERIC(10,4),  -- ask - bid from quotes table at fill time
+    slippage_vs_mid   NUMERIC(10,4)   -- fill_price - midpoint at fill time
 );
