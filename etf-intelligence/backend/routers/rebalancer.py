@@ -6,7 +6,9 @@ from pydantic import BaseModel
 from auth import get_current_user
 from config.settings import TICKERS
 from routers.portfolios import _assert_owns_portfolio
-from storage.database import fetch_holdings, fetch_latest_quotes, fetch_portfolio_allocations
+from storage.holdings import fetch_holdings
+from storage.portfolios import fetch_portfolio_allocations
+from storage.quotes import fetch_latest_quotes
 from rebalancer.allocator import BuyRecommendation, HoldingSnapshot, compute_buy_recommendations
 from rebalancer.timing import ExecutionWindow, get_execution_windows
 

@@ -46,9 +46,11 @@ patterns, and tells the user exactly what to buy on payday.
 
 ### SQL
 - No `SELECT *` ever
-- No inline SQL strings anywhere outside database.py
+- No inline SQL strings anywhere outside `storage/`
 - Every query gets a comment explaining what it does and why
 - Use parameterized queries always — no string formatting in SQL
+- One file per domain — `storage/quotes.py`, `storage/portfolios.py`, `storage/holdings.py`, `storage/summaries.py`
+- `storage/database.py` holds only the engine and session factory — no query functions
 
 ### React
 - Components capped at ~150 lines
@@ -72,7 +74,12 @@ Each file has one job. Never put logic in the wrong layer.
 | Directory | Owns |
 |-----------|------|
 | `ingestion/` | Fetching and scheduling only |
-| `storage/` | Database connection and summarization only |
+| `storage/database.py` | Engine and session factory only — no query functions |
+| `storage/quotes.py` | All queries for the quotes table |
+| `storage/portfolios.py` | All queries for portfolios and portfolio_allocations |
+| `storage/holdings.py` | All queries for the holdings table |
+| `storage/summaries.py` | All queries for daily_summaries |
+| `storage/summarizer.py` | Aggregation logic that writes to daily_summaries |
 | `analysis/` | Spread, volatility, anomaly patterns only |
 | `rebalancer/` | Allocation algorithm and timing only |
 | `benchmark/` | Profiling and latency measurement only |

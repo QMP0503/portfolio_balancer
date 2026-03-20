@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from auth import get_current_user
 from config.settings import TICKERS
 from routers.portfolios import _assert_owns_portfolio
-from storage.database import fetch_holdings, upsert_holding
+from storage.holdings import fetch_holdings, upsert_holding
 
 router = APIRouter(prefix="/portfolios", tags=["holdings"])
 

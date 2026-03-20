@@ -15,7 +15,7 @@ from config.settings import (
 )
 from ingestion.fetcher import fetch_all
 from ingestion.validator import validate_quote
-from storage.database import insert_quotes
+from storage.quotes import insert_quotes
 from storage.summarizer import compute_daily_summary
 
 logger = logging.getLogger(__name__)

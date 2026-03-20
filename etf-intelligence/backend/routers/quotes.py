@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from auth import get_current_user
-from storage.database import fetch_latest_quotes
+from storage.quotes import fetch_latest_quotes
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
 

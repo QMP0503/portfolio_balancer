@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_current_user
-from storage.database import fetch_daily_summary
+from storage.summaries import fetch_daily_summary
 
 router = APIRouter(prefix="/summaries", tags=["summaries"])
 

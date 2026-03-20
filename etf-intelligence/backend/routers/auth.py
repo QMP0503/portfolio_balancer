@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from auth import create_access_token, hash_password, verify_password
 from config.settings import JWT_EXPIRY_DAYS, JWT_REMEMBER_ME_DAYS
-from storage.database import AsyncSessionLocal
+from storage.database import AsyncSessionLocal  # connection only — no query functions here
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

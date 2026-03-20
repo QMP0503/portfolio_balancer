@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from auth import get_current_user
 from config.settings import TICKERS
-from storage.database import (
+from storage.portfolios import (
     create_portfolio,
     fetch_portfolio_allocations,
     fetch_portfolios,
