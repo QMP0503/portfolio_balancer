@@ -157,17 +157,19 @@ etf-intelligence/
 
 Each phase is independently shippable. Never move to the next phase until the current one works.
 
+**Deployment priority:** Ship phases 5 → 6 → 8 before anything else. The scheduler must be live on the server collecting minute-level data as early as possible — Phase 7 (pattern analysis) is only valuable with a strong historical baseline, so getting data collection running takes priority over analysis features.
+
 | Phase | What | Files | Status |
 |-------|------|-------|--------|
 | 1 | Foundation | `schema.sql`, `database.py`, `settings.py` | ✅ Done |
 | 2 | Data ingestion | `fetcher.py`, `validator.py`, `scheduler.py` | ✅ Done |
-| 3 | Storage + summaries | `summarizer.py` | 🔄 In progress |
-| 4 | Rebalancer | `allocator.py`, `timing.py` | 🔲 Not started |
+| 3 | Storage + summaries | `summarizer.py` | ✅ Done |
+| 4 | Rebalancer | `allocator.py`, `timing.py` | ✅ Done |
 | 5 | API layer | `main.py` endpoints | 🔲 Not started |
 | 6 | React frontend | `Dashboard`, `Allocation`, `BuyRecommendation`, `ExecutionBenchmark` | 🔲 Not started |
-| 6.5 | Gmail transaction parser | `gmail_parser.py` | 🔲 Not started — deferred after frontend; requires Gmail API OAuth setup |
-| 7 | Pattern analysis | `spread.py`, `volatility.py`, `anomaly.py` | 🔲 Not started |
-| 8 | Deploy + README | Docker, Nginx, benchmark results | 🔲 Not started |
+| 8 | Deploy + README | Docker, Nginx, benchmark results | 🔲 Not started — **deploy target, unlocks data collection** |
+| 6.5 | Gmail transaction parser | `gmail_parser.py` | 🔲 Not started — deferred after deploy; requires Gmail API OAuth setup |
+| 7 | Pattern analysis | `spread.py`, `volatility.py`, `anomaly.py` | 🔲 Not started — deferred until sufficient historical data exists (weeks of collection) |
 | 9 | C++ execution simulator | `order_book.cpp`, `replay.cpp`, Python vs C++ benchmarks | 🔲 Not started — Shopify internship |
 
 ---
@@ -416,8 +418,8 @@ ZEM spread currently 2.1x wider than normal ⚠️
 |-------|--------|-------|
 | 1 — Foundation | ✅ Done | settings.py, schema.sql, database.py, main.py skeleton committed in d9c055a and ecbfdc4. |
 | 2 — Ingestion | ✅ Done | fetcher.py, validator.py, scheduler.py committed in 053ab80 and 5c3a6d1; test_validator.py included. |
-| 3 — Storage | 🔧 In progress | summarizer.py exists on disk but is NOT yet committed to git — schema.sql and database.py are committed. |
-| 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed. 15 tests passing. `gmail_parser.py` deferred to Phase 6.5. |
+| 3 — Storage | ✅ Done | summarizer.py committed in 8c5b9ed. compute_daily_summary + backfill_summaries working. |
+| 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed in 47e0f9f and d5d6913. 15 tests passing. `gmail_parser.py` deferred to Phase 6.5. |
 | 5 — API | 🔲 Not started | |
 | 6 — Frontend | 🔲 Not started | |
 | 7 — Analysis | 🔲 Not started | |
