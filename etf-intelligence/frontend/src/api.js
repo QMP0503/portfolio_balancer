@@ -80,7 +80,7 @@ export function getLatestQuotes() {
 // --- Rebalancer ---
 
 export function getRecommendations(portfolioId, contributionCad) {
-  return request('GET', `/rebalancer/${portfolioId}/recommend?contribution=${contributionCad}`)
+  return request('GET', `/rebalancer/${portfolioId}/recommend?contribution_cad=${contributionCad}`)
 }
 
 export function getTiming() {
