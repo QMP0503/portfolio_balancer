@@ -34,6 +34,15 @@ export function login(email, password, rememberMe = false) {
   return request('POST', '/auth/login', { email, password, remember_me: rememberMe })
 }
 
+export function register(email, firstName, lastName, password) {
+  return request('POST', '/auth/register', {
+    email,
+    first_name: firstName,
+    last_name: lastName,
+    password,
+  })
+}
+
 export function logout() {
   return request('POST', '/auth/logout')
 }

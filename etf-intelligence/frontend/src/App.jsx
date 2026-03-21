@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { getPortfolios } from './api'
 import Dashboard from './components/Dashboard'
 import Login from './components/Login'
+import Register from './components/Register'
 import Settings from './components/Settings'
 
 function AuthGuard({ isLoggedIn, children }) {
@@ -45,6 +46,16 @@ export default function App() {
                 <AuthGuard isLoggedIn={isLoggedIn}>
                   <Dashboard onLogout={() => setIsLoggedIn(false)} />
                 </AuthGuard>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                isLoggedIn ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Register onRegister={() => setIsLoggedIn(true)} />
+                )
               }
             />
             <Route

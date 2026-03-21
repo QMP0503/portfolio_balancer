@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { login } from '../api'
 
 export default function Login({ onLogin }) {
@@ -83,6 +84,11 @@ export default function Login({ onLogin }) {
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-blue-500 hover:underline">Create one</Link>
+        </p>
       </div>
     </div>
   )
