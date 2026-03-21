@@ -2,6 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine,
   Cell, ResponsiveContainer,
 } from 'recharts'
+import { useTheme } from '../context/ThemeContext'
 
 const TICKERS = ['HXQ.TO', 'VFV.TO', 'VCN.TO', 'ZEM.TO']
 
@@ -41,9 +42,11 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function Allocation({ holdings, allocations, quotes }) {
+  const { theme } = useTheme()
   if (!allocations.length) return null
 
   const data = buildChartData(holdings, allocations, quotes)
+  const cursorFill = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'
 
   return (
     <section className="mb-8">
@@ -67,24 +70,26 @@ export default function Allocation({ holdings, allocations, quotes }) {
       {/* Bar chart */}
       <ResponsiveContainer width="100%" height={160}>
         <BarChart data={data} layout="vertical" margin={{ left: 0, right: 16, top: 4, bottom: 4 }}>
-          <XAxis type="number" domain={[0, 50]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} />
+          <XAxis type="number" domain={[0, 50]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
           <YAxis
             type="category"
             dataKey="ticker"
             tickFormatter={(t) => t.replace('.TO', '')}
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: '#6b7280' }}
+            axisLine={false}
+            tickLine={false}
             width={36}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: cursorFill }} />
           <Bar dataKey="currentPct" name="Current" barSize={10} radius={[0, 3, 3, 0]}>
             {data.map(({ ticker, diff }) => (
               <Cell
                 key={ticker}
-                fill={Math.abs(diff) < 0.5 ? '#6b7280' : diff > 0 ? '#f87171' : '#60a5fa'}
+                fill={Math.abs(diff) < 0.5 ? '#374151' : diff > 0 ? '#7f3f3f' : '#2d5a8a'}
               />
             ))}
           </Bar>
-          <Bar dataKey="targetPct" name="Target" barSize={4} fill="#374151" radius={[0, 2, 2, 0]} />
+          <Bar dataKey="targetPct" name="Target" barSize={4} fill="#2d3748" radius={[0, 2, 2, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </section>

@@ -446,7 +446,7 @@ ZEM spread currently 2.1x wider than normal ⚠️
 | 3 — Storage | ✅ Done | summarizer.py committed in 8c5b9ed. compute_daily_summary + backfill_summaries working. |
 | 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed in 47e0f9f and d5d6913. 15 tests passing. `gmail_parser.py` deferred to Phase 6.5. |
 | 5 — API | ✅ Done | JWT httpOnly cookies, 6 routers (auth/quotes/portfolios/holdings/rebalancer/summaries), 36 tests. Schema refactored: etf_config → per-user portfolios + portfolio_allocations. storage/ split into one file per domain. Committed abaaff5. |
-| 6 — Frontend | 🔲 In progress | Scaffold done 2026-03-21: Vite+React 19+Tailwind v4+Recharts+React Router. api.js, ThemeContext, App, Login complete. Dashboard/Settings/Allocation/BuyRecommendation/ExecutionTiming/AddPortfolioModal remaining. |
+| 6 — Frontend | ✅ Done | All 11 components complete 2026-03-21: Login, Register, Dashboard, Allocation (Recharts), BuyRecommendation, ExecutionTiming, AddPortfolioModal (3-step), Settings. Docker service added. |
 | 6.5 — Gmail parser | 🔲 Deferred | After deploy. Requires Gmail API OAuth setup. |
 | 6.6 — Setup wizard | 🔲 Deferred | First-login onboarding flow. Build after deploy when missing UX is clearer. |
 | 7 — Analysis | 🔲 Deferred | Needs weeks of collected data to be meaningful. |
