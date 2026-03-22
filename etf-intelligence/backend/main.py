@@ -43,18 +43,18 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:80", "http://localhost"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(quotes.router)
-app.include_router(portfolios.router)
-app.include_router(holdings.router)
-app.include_router(rebalancer.router)
-app.include_router(summaries.router)
+app.include_router(auth.router, prefix="/api")
+app.include_router(quotes.router, prefix="/api")
+app.include_router(portfolios.router, prefix="/api")
+app.include_router(holdings.router, prefix="/api")
+app.include_router(rebalancer.router, prefix="/api")
+app.include_router(summaries.router, prefix="/api")
 
 
 @app.get("/health", response_model=HealthResponse)
