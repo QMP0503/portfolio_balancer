@@ -1,10 +1,12 @@
 """ingestion/scheduler.py — APScheduler that runs ingestion during market hours only."""
 
 import logging
+import time
 from datetime import datetime
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from prometheus_client import Counter, Gauge, Histogram
 
 from config.settings import (
     FETCH_INTERVAL_SECONDS,
@@ -20,6 +22,32 @@ from storage.summarizer import compute_daily_summary
 
 logger = logging.getLogger(__name__)
 
+FETCH_LATENCY = Histogram(
+    "etf_fetch_latency_seconds",
+    "Time to fetch quote data from yfinance",
+    labelnames=["ticker"],
+)
+FETCH_SUCCESS = Counter(
+    "etf_fetch_success_total",
+    "Successful fetches per ticker",
+    labelnames=["ticker"],
+)
+FETCH_FAILURE = Counter(
+    "etf_fetch_failure_total",
+    "Failed fetches per ticker",
+    labelnames=["ticker"],
+)
+ROWS_INSERTED = Counter(
+    "etf_rows_inserted_total",
+    "Rows inserted into TimescaleDB",
+    labelnames=["ticker"],
+)
+LAST_FETCH_TIME = Gauge(
+    "etf_last_fetch_timestamp",
+    "Unix timestamp of last successful fetch",
+    labelnames=["ticker"],
+)
+
 _scheduler = AsyncIOScheduler(timezone=TIMEZONE)
 _open_hour, _open_minute = (int(x) for x in MARKET_OPEN.split(":"))
 _close_hour, _close_minute = (int(x) for x in MARKET_CLOSE.split(":"))
@@ -27,9 +55,25 @@ _close_hour, _close_minute = (int(x) for x in MARKET_CLOSE.split(":"))
 
 async def fetch_and_store() -> None:
     """Fetch quotes for all tickers, validate, and insert into DB."""
+    t0 = time.monotonic()
     raw = await fetch_all(TICKERS)
+    elapsed = time.monotonic() - t0
+
+    for quote in raw:
+        ticker = quote["ticker"]
+        FETCH_LATENCY.labels(ticker=ticker).observe(elapsed / len(TICKERS))
+        if quote.get("price") is not None:
+            FETCH_SUCCESS.labels(ticker=ticker).inc()
+            LAST_FETCH_TIME.labels(ticker=ticker).set(time.time())
+        else:
+            FETCH_FAILURE.labels(ticker=ticker).inc()
+
     valid = [q for quote in raw if (q := validate_quote(quote)) is not None]
     inserted = await insert_quotes(valid)
+
+    for quote in valid:
+        ROWS_INSERTED.labels(ticker=quote["ticker"]).inc()
+
     logger.info("Cycle complete: fetched=%d valid=%d inserted=%d", len(raw), len(valid), inserted)
 
 

@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from ingestion.scheduler import start_scheduler, stop_scheduler
 from routers import auth, quotes, holdings, portfolios, rebalancer, summaries
@@ -48,6 +49,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+Instrumentator().instrument(app).expose(app)
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(quotes.router, prefix="/api")
