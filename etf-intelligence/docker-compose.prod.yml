@@ -34,7 +34,7 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_SERVER_ROOT_URL=https://mun-server.tail7c4a6f.ts.net/grafana
+      - GF_SERVER_ROOT_URL=http://mun-server.tail7c4a6f.ts.net/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     depends_on:
       - prometheus
