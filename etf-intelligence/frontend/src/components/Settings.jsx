@@ -1,77 +1,63 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getPortfolios, getAllocations, getHoldings, updateHolding, setAllocation } from '../api'
+import { getMe, updateMe, changePassword } from '../api'
 
-const TABS = ['Holdings', 'Allocations']
-
-function EditableRow({ label, value, unit = '', onSave }) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(String(value))
-
-  function handleSave() {
-    onSave(Number(draft))
-    setEditing(false)
-  }
-
-  if (editing) {
-    return (
-      <td className="py-2 flex items-center gap-2">
-        <input
-          type="number" min="0" value={draft} autoFocus
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
-          className="w-24 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <span className="text-xs text-gray-400">{unit}</span>
-        <button onClick={handleSave} className="text-xs text-blue-500 hover:underline">Save</button>
-        <button onClick={() => setEditing(false)} className="text-xs text-gray-400 hover:underline">Cancel</button>
-      </td>
-    )
-  }
-
+function Field({ label, type = 'text', value, onChange }) {
   return (
-    <td className="py-2">
-      <span className="tabular-nums">{value}{unit}</span>
-      <button onClick={() => { setDraft(String(value)); setEditing(true) }} className="ml-3 text-xs text-gray-400 hover:text-blue-500">
-        Edit
-      </button>
-    </td>
+    <div>
+      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
   )
 }
 
+
 export default function Settings() {
-  const [portfolios, setPortfolios] = useState([])
-  const [selectedId, setSelectedId] = useState(null)
-  const [holdings, setHoldings] = useState([])
-  const [allocations, setAllocations] = useState([])
-  const [tab, setTab] = useState('Holdings')
+  const [profile, setProfile] = useState({ email: '', first_name: '', last_name: '' })
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   useEffect(() => {
-    getPortfolios()
-      .then((ps) => { setPortfolios(ps); if (ps.length > 0) setSelectedId(ps[0].id) })
+    getMe()
+      .then((me) => {
+        setProfile(me)
+        setFirstName(me.first_name)
+        setLastName(me.last_name)
+        setEmail(me.email)
+      })
       .catch((err) => setError(err.message))
   }, [])
 
-  useEffect(() => {
-    if (!selectedId) return
-    Promise.all([getHoldings(selectedId), getAllocations(selectedId)])
-      .then(([h, a]) => { setHoldings(h); setAllocations(a) })
-      .catch((err) => setError(err.message))
-  }, [selectedId])
-
-  async function saveHolding(ticker, shares) {
+  async function handleSaveProfile(e) {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
     try {
-      await updateHolding(selectedId, ticker, shares)
-      setHoldings((hs) => hs.map((h) => h.ticker === ticker ? { ...h, shares } : h))
+      const updated = await updateMe(email, firstName, lastName)
+      setProfile(updated)
+      setSuccess('Profile updated.')
     } catch (err) { setError(err.message) }
   }
 
-  async function saveAllocation(ticker, targetPct) {
+  async function handleChangePassword(e) {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
     try {
-      const current = allocations.find((a) => a.ticker === ticker)
-      await setAllocation(selectedId, ticker, targetPct, current?.goal ?? '')
-      setAllocations((as) => as.map((a) => a.ticker === ticker ? { ...a, target_pct: targetPct } : a))
+      await changePassword(currentPassword, newPassword)
+      setCurrentPassword('')
+      setNewPassword('')
+      setSuccess('Password changed.')
     } catch (err) { setError(err.message) }
   }
 
@@ -88,69 +74,44 @@ export default function Settings() {
           <button onClick={() => setError('')} className="ml-4 font-bold">×</button>
         </div>
       )}
+      {success && (
+        <div className="mb-4 px-4 py-3 rounded bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm">
+          {success}
+        </div>
+      )}
 
-      {/* Portfolio selector */}
-      <div className="mb-6">
-        <select
-          value={selectedId ?? ''}
-          onChange={(e) => setSelectedId(Number(e.target.value))}
-          className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-        >
-          {portfolios.map((p) => <option key={p.id} value={p.id}>{p.account_name}</option>)}
-        </select>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-800 mb-4">
-        {TABS.map((t) => (
-          <button
-            key={t} onClick={() => setTab(t)}
-            className={`pb-2 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'border-blue-500 text-blue-500' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-          >
-            {t}
+      {/* Profile */}
+      <section className="mb-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Profile</h2>
+        <form onSubmit={handleSaveProfile} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="First name" value={firstName} onChange={setFirstName} />
+            <Field label="Last name" value={lastName} onChange={setLastName} />
+          </div>
+          <Field label="Email" type="email" value={email} onChange={setEmail} />
+          <button type="submit" className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">
+            Save profile
           </button>
-        ))}
-      </div>
+        </form>
+      </section>
 
-      {/* Holdings tab */}
-      {tab === 'Holdings' && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-gray-400 border-b border-gray-200 dark:border-gray-800">
-              <th className="pb-2 font-medium">Ticker</th>
-              <th className="pb-2 font-medium">Shares</th>
-            </tr>
-          </thead>
-          <tbody>
-            {holdings.map((h) => (
-              <tr key={h.ticker} className="border-b border-gray-100 dark:border-gray-800/50">
-                <td className="py-2 font-mono text-xs w-20">{h.ticker.replace('.TO', '')}</td>
-                <EditableRow value={h.shares} onSave={(v) => saveHolding(h.ticker, v)} />
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {/* Change password */}
+      <section className="mb-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Change Password</h2>
+        <form onSubmit={handleChangePassword} className="space-y-3">
+          <Field label="Current password" type="password" value={currentPassword} onChange={setCurrentPassword} />
+          <Field label="New password" type="password" value={newPassword} onChange={setNewPassword} />
+          <button type="submit" className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">
+            Change password
+          </button>
+        </form>
+      </section>
 
-      {/* Allocations tab */}
-      {tab === 'Allocations' && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-gray-400 border-b border-gray-200 dark:border-gray-800">
-              <th className="pb-2 font-medium">Ticker</th>
-              <th className="pb-2 font-medium">Target %</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allocations.map((a) => (
-              <tr key={a.ticker} className="border-b border-gray-100 dark:border-gray-800/50">
-                <td className="py-2 font-mono text-xs w-20">{a.ticker.replace('.TO', '')}</td>
-                <EditableRow value={a.target_pct} unit="%" onSave={(v) => saveAllocation(a.ticker, v)} />
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {/* Placeholder for future stock picker */}
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Tracked Stocks</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">HXQ · VFV · VCN · ZEM — customisation coming soon.</p>
+      </section>
     </div>
   )
 }

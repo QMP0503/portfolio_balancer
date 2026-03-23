@@ -5,7 +5,24 @@
       "Bash(git)",
       "Bash(git add:*)",
       "Bash(git push:*)",
-      "Bash(cd \"C:/Users/quang/portfolio_balancer/etf-intelligence\" && python -c \"import sqlalchemy\" 2>&1)"
+      "Bash(cd \"C:/Users/quang/portfolio_balancer/etf-intelligence\" && python -c \"import sqlalchemy\" 2>&1)",
+      "Bash(cd:*)",
+      "Bash(docker exec:*)",
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(powershell -Command \"Get-Process -Id 12460,13724 | Select-Object Id,Name,Path\" 2>&1)",
+      "Bash(python:*)",
+      "Bash(docker compose:*)",
+      "Bash(git commit:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 10 npm run dev)",
+      "Bash(timeout 15 npm run build)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''detail'''',''''ok''''\\)\\)\")",
+      "Bash(curl:*)",
+      "Bash(pip install:*)"
     ]
   }
 }

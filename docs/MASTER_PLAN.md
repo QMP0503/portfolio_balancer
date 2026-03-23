@@ -444,34 +444,34 @@ ZEM spread currently 2.1x wider than normal ⚠️
 | 1 — Foundation | ✅ Done | settings.py, schema.sql, database.py, main.py skeleton committed in d9c055a and ecbfdc4. |
 | 2 — Ingestion | ✅ Done | fetcher.py, validator.py, scheduler.py committed in 053ab80 and 5c3a6d1; test_validator.py included. |
 | 3 — Storage | ✅ Done | summarizer.py committed in 8c5b9ed. compute_daily_summary + backfill_summaries working. |
-| 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed in 47e0f9f and d5d6913. 15 tests passing. `gmail_parser.py` deferred to Phase 6.5. |
+| 4 — Rebalancer | ✅ Done | allocator.py + timing.py committed in 47e0f9f and d5d6913. Bug fix in 5866ae4: rebalancer now shows all 4 tickers, greedy-fills leftover cash, and displays correct post-buy percentages. |
 | 5 — API | ✅ Done | JWT httpOnly cookies, 6 routers (auth/quotes/portfolios/holdings/rebalancer/summaries), 36 tests. Schema refactored: etf_config → per-user portfolios + portfolio_allocations. storage/ split into one file per domain. Committed abaaff5. |
 | 6 — Frontend | ✅ Done | All 11 components complete 2026-03-21: Login, Register, Dashboard, Allocation (Recharts), BuyRecommendation, ExecutionTiming, AddPortfolioModal (3-step), Settings. Docker service added. |
 | 6.5 — Gmail parser | 🔲 Deferred | After deploy. Requires Gmail API OAuth setup. |
 | 6.6 — Setup wizard | 🔲 Deferred | First-login onboarding flow. Build after deploy when missing UX is clearer. |
 | 7 — Analysis | 🔲 Deferred | Needs weeks of collected data to be meaningful. |
-| 8 — Deploy + README | 🔲 Not started | **Priority after Phase 6.** Docker + Nginx on Linux server. |
+| 8 — Deploy + README | 🔧 In progress | nginx config, Dockerfile, prod compose overlay (a3e0a86), Prometheus metrics on FastAPI + ingestion (437d544), Grafana provisioning configs (6d54473), /api prefix added to all routes (75feca6). |
 | 9 — C++ Simulator | 🔲 Not started | Shopify internship. |
 
 ---
 
 ## Agent Notes
 
-_Added 2026-03-14 by master-plan-updater agent._
+_Added 2026-03-14, updated 2026-03-23 by master-plan-updater agent._
 
-**1. summarizer.py is untracked in git.**
-The file exists at `etf-intelligence/backend/storage/summarizer.py` and its `__pycache__` confirms it has been executed, but it has never been committed. Phase 3 cannot be marked complete until this file is committed. Recommend: `git add etf-intelligence/backend/storage/summarizer.py && git commit -m "phase3: add summarizer.py"`.
+**1. summarizer.py was untracked as of 2026-03-14 — status unknown.**
+The 2026-03-14 session found summarizer.py untracked in git. Phases 3 through 5 have since been marked complete by the user. If summarizer.py was committed as part of a later commit with a vague message, it is not individually traceable in git history. No further action required unless Phase 3 is re-examined.
 
-**2. Schema deviations from the Data Architecture section (user-reported, not yet reflected in plan).**
-The following changes were made during Phase 2 and Phase 3 implementation but are not documented in the "What Gets Stored" section above:
-- `quotes` table: a `price` column was added (committed in 5c3a6d1 "built fetcher.py and add price to database").
+**2. Schema deviations from the Data Architecture section (not yet reflected in plan).**
+The following changes were made during implementation but are not documented in the protected "What Gets Stored" section above:
+- `quotes` table: a `price` column was added (committed in 5c3a6d1).
 - `transactions` table: `price_paid` was replaced by `fill_price`, `predicted_spread`, `actual_spread`, and `slippage_vs_mid`.
 
 **3. TARGET_ALLOCATIONS deviate from plan document.**
-The user reports settings.py now has HXQ=40%, VFV=35%. The Data Architecture section and CLAUDE.md ETF table still show HXQ=35%, VFV=40%. These sections are protected from direct edits — confirm which is authoritative before updating the plan document.
+settings.py has HXQ=40%, VFV=35%. The Data Architecture section and CLAUDE.md ETF table still show HXQ=35%, VFV=40%. Awaiting user confirmation of which is authoritative before the protected sections can be updated.
 
-**4. scheduler.py cron behavior (user-reported, not verifiable from git message alone).**
-User reports APScheduler triggers `compute_daily_summary` at 16:01 ET daily; commit 053ab80 "finish phase 2" is the relevant commit, but the message does not confirm this detail. Recorded here for traceability.
+**4. Phase 8 deploy infrastructure committed but not yet confirmed complete.**
+As of 2026-03-23, commits a3e0a86 through 1a2b2c2 show nginx, Dockerfile, prod compose, Prometheus, and Grafana all committed. Phase 8 is marked `🔧 In progress`. User should confirm whether the stack is live on the Linux server and README is written before marking complete.
 
-**5. validator.py rejection logic (user-reported).**
-User reports the relative spread threshold is `(ask - bid) / price > 2%`; committed in 053ab80. Not verifiable from the commit message alone — recorded here for traceability.
+**5. Phase 4 rebalancer fix (5866ae4) post-dates phase completion.**
+commit 5866ae4 modified allocator.py and test_allocator.py after Phase 4 was marked done — this was a correctness fix (missing tickers, greedy fill, post-buy % display), not a new feature. Phase 4 remains `✅ Done`; the fix is noted in the Notes column.

@@ -9,6 +9,7 @@ import Allocation from './Allocation'
 import BuyRecommendation from './BuyRecommendation'
 import ExecutionTiming from './ExecutionTiming'
 import AddPortfolioModal from './AddPortfolioModal'
+import EditAllocationsModal from './EditAllocationsModal'
 
 export default function Dashboard({ onLogout }) {
   const { theme, toggleTheme } = useTheme()
@@ -22,6 +23,7 @@ export default function Dashboard({ onLogout }) {
   const [recommendations, setRecommendations] = useState(null)
   const [contributionCad, setContributionCad] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [showEditAlloc, setShowEditAlloc] = useState(false)
   const [banner, setBanner] = useState('')
   const [calcLoading, setCalcLoading] = useState(false)
 
@@ -66,6 +68,19 @@ export default function Dashboard({ onLogout }) {
       setBanner(err.message)
     } finally {
       setCalcLoading(false)
+    }
+  }
+
+  async function handleHoldingAdded(ticker, sharesToAdd) {
+    setHoldings((hs) => hs.map((h) => h.ticker === ticker ? { ...h, shares: h.shares + sharesToAdd } : h))
+    const amount = Number(contributionCad)
+    if (amount > 0) {
+      try {
+        const data = await getRecommendations(selectedId, amount)
+        setRecommendations(data)
+      } catch (err) {
+        setBanner(err.message)
+      }
     }
   }
 
@@ -150,7 +165,7 @@ export default function Dashboard({ onLogout }) {
             ${totalValue.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CAD
           </p>
 
-          <Allocation holdings={holdings} allocations={allocations} quotes={quotes} />
+          <Allocation holdings={holdings} allocations={allocations} quotes={quotes} onEdit={() => setShowEditAlloc(true)} />
 
           <BuyRecommendation
             recommendations={recommendations}
@@ -159,10 +174,27 @@ export default function Dashboard({ onLogout }) {
             onCalculate={handleCalculate}
             loading={calcLoading}
             totalValue={totalValue}
+            portfolioId={selectedId}
+            holdings={holdings}
+            onHoldingAdded={handleHoldingAdded}
           />
 
           <ExecutionTiming windows={timing} />
         </>
+      )}
+
+      {showEditAlloc && allocations.length > 0 && (
+        <EditAllocationsModal
+          portfolioId={selectedId}
+          allocations={allocations}
+          holdings={holdings}
+          onClose={() => setShowEditAlloc(false)}
+          onSaved={({ allocations: a, holdings: h }) => {
+            setAllocations(a)
+            setHoldings(h)
+            setShowEditAlloc(false)
+          }}
+        />
       )}
 
       {showModal && (

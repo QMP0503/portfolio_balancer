@@ -1,12 +1,13 @@
 """routers/auth.py — Login, registration, and logout endpoints."""
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import text
 
-from auth import create_access_token, hash_password, verify_password
+from auth import create_access_token, get_current_user, hash_password, verify_password
 from config.settings import JWT_EXPIRY_DAYS, JWT_REMEMBER_ME_DAYS
 from storage.database import AsyncSessionLocal  # connection only — no query functions here
+from storage.users import fetch_hashed_password, fetch_user_profile, update_user_password, update_user_profile
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -115,3 +116,62 @@ async def login(body: LoginRequest, response: Response) -> AuthResponse:
 async def logout(response: Response) -> None:
     """Clear the auth cookie to log the user out."""
     response.delete_cookie(key=_COOKIE_NAME, httponly=True, samesite="strict")
+
+
+class ProfileResponse(BaseModel):
+    """Current user's profile fields."""
+
+    user_id: int
+    email: str
+    first_name: str
+    last_name: str
+
+
+class UpdateProfileRequest(BaseModel):
+    """Request body for updating profile fields."""
+
+    email: EmailStr
+    first_name: str
+    last_name: str
+
+
+class ChangePasswordRequest(BaseModel):
+    """Request body for changing the user's password."""
+
+    current_password: str
+    new_password: str
+
+
+@router.get("/me", response_model=ProfileResponse)
+async def get_me(user: dict = Depends(get_current_user)) -> ProfileResponse:
+    """Return the current user's profile."""
+    profile = await fetch_user_profile(user["user_id"])
+    if not profile:
+        raise HTTPException(status_code=404, detail="User not found")
+    return ProfileResponse(
+        user_id=profile["id"],
+        email=profile["email"],
+        first_name=profile["first_name"],
+        last_name=profile["last_name"],
+    )
+
+
+@router.patch("/me", response_model=ProfileResponse)
+async def update_me(body: UpdateProfileRequest, user: dict = Depends(get_current_user)) -> ProfileResponse:
+    """Update the current user's name and email."""
+    updated = await update_user_profile(user["user_id"], body.email, body.first_name, body.last_name)
+    return ProfileResponse(
+        user_id=updated["id"],
+        email=updated["email"],
+        first_name=updated["first_name"],
+        last_name=updated["last_name"],
+    )
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(body: ChangePasswordRequest, user: dict = Depends(get_current_user)) -> None:
+    """Change the current user's password after verifying the current one."""
+    hashed = await fetch_hashed_password(user["user_id"])
+    if not hashed or not verify_password(body.current_password, hashed):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    await update_user_password(user["user_id"], hash_password(body.new_password))

@@ -47,6 +47,18 @@ export function logout() {
   return request('POST', '/auth/logout')
 }
 
+export function getMe() {
+  return request('GET', '/auth/me')
+}
+
+export function updateMe(email, firstName, lastName) {
+  return request('PATCH', '/auth/me', { email, first_name: firstName, last_name: lastName })
+}
+
+export function changePassword(currentPassword, newPassword) {
+  return request('POST', '/auth/me/password', { current_password: currentPassword, new_password: newPassword })
+}
+
 // --- Portfolios ---
 
 export function getPortfolios() {

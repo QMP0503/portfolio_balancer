@@ -43,7 +43,7 @@ function CustomTooltip({ active, payload, label }) {
   )
 }
 
-export default function Allocation({ holdings, allocations, quotes }) {
+export default function Allocation({ holdings, allocations, quotes, onEdit }) {
   const { theme } = useTheme()
   if (!allocations.length) return null
 
@@ -52,9 +52,12 @@ export default function Allocation({ holdings, allocations, quotes }) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
-        Allocation
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Allocation
+        </h2>
+        <button onClick={onEdit} className="text-xs text-gray-400 hover:text-blue-500">Edit</button>
+      </div>
 
       {/* Summary rows */}
       <div className="space-y-2 mb-4">
