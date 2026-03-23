@@ -14,11 +14,13 @@ function buildChartData(holdings, allocations, quotes) {
   const totalValue = TICKERS.reduce((sum, t) => sum + (sharesMap[t] ?? 0) * (priceMap[t] ?? 0), 0)
 
   return TICKERS.map((ticker) => {
-    const value = (sharesMap[ticker] ?? 0) * (priceMap[ticker] ?? 0)
+    const shares = sharesMap[ticker] ?? 0
+    const price = priceMap[ticker] ?? 0
+    const value = shares * price
     const currentPct = totalValue > 0 ? (value / totalValue) * 100 : 0
     const targetPct = targetMap[ticker] ?? 0
     const diff = currentPct - targetPct
-    return { ticker, currentPct: +currentPct.toFixed(1), targetPct, diff: +diff.toFixed(1), value }
+    return { ticker, shares, price, currentPct: +currentPct.toFixed(1), targetPct, diff: +diff.toFixed(1), value }
   })
 }
 
@@ -56,9 +58,10 @@ export default function Allocation({ holdings, allocations, quotes }) {
 
       {/* Summary rows */}
       <div className="space-y-2 mb-4">
-        {data.map(({ ticker, currentPct, targetPct, diff, value }) => (
+        {data.map(({ ticker, shares, price, currentPct, targetPct, diff, value }) => (
           <div key={ticker} className="flex items-center gap-3 text-sm">
             <span className="w-12 font-mono text-xs">{ticker.replace('.TO', '')}</span>
+            <span className="w-28 tabular-nums text-gray-500 text-xs whitespace-nowrap">{shares} @ ${price.toFixed(2)}</span>
             <span className="w-20 tabular-nums text-gray-300">
               ${value.toLocaleString('en-CA', { maximumFractionDigits: 0 })}
             </span>

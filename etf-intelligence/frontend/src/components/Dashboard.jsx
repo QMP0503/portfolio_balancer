@@ -158,6 +158,7 @@ export default function Dashboard({ onLogout }) {
             onContributionChange={setContributionCad}
             onCalculate={handleCalculate}
             loading={calcLoading}
+            totalValue={totalValue}
           />
 
           <ExecutionTiming windows={timing} />

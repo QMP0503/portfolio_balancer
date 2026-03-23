@@ -6,9 +6,24 @@ export default function BuyRecommendation({
   onContributionChange,
   onCalculate,
   loading,
+  totalValue,
 }) {
   const recs = recommendations?.recommendations ?? []
   const leftover = recommendations?.leftover_cad ?? null
+  const totalSpent = recommendations?.total_cost ?? 0
+  const newPortfolioTotal = totalValue + totalSpent
+
+  const recNotes = recs.map((r) => {
+    const currentValue = (r.current_pct / 100) * totalValue
+    const postBuyPct = newPortfolioTotal > 0
+      ? ((currentValue + r.total_cost) / newPortfolioTotal) * 100
+      : r.target_pct
+    return {
+      fromPct: r.current_pct,
+      toPct: +postBuyPct.toFixed(1),
+      onTarget: Math.abs(postBuyPct - r.target_pct) <= 2,
+    }
+  })
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') onCalculate()
@@ -47,34 +62,46 @@ export default function BuyRecommendation({
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
             Recommended Buys
           </h2>
-          <table className="w-full text-sm mb-3">
+          <table className="w-full text-sm mb-3 table-fixed">
+            <colgroup>
+              <col style={{ width: '3.5rem' }} />
+              <col style={{ width: '4.5rem' }} />
+              <col style={{ width: '5.5rem' }} />
+              <col style={{ width: '7rem' }} />
+              <col />
+            </colgroup>
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-gray-200 dark:border-gray-800">
                 <th className="pb-2 font-medium">Ticker</th>
-                <th className="pb-2 font-medium text-right">Shares</th>
-                <th className="pb-2 font-medium text-right">Price</th>
-                <th className="pb-2 font-medium text-right">Total</th>
+                <th className="pb-2 font-medium">Shares</th>
+                <th className="pb-2 font-medium">Price</th>
+                <th className="pb-2 font-medium">Total</th>
                 <th className="pb-2 font-medium">Note</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {recs.map((r) => (
-                <tr key={r.ticker} className={r.shares_to_buy === 0 ? 'opacity-50' : ''}>
-                  <td className="py-2 font-mono text-xs">{r.ticker.replace('.TO', '')}</td>
-                  <td className="py-2 text-right tabular-nums">
-                    {r.shares_to_buy === 0 ? '—' : r.shares_to_buy}
-                  </td>
-                  <td className="py-2 text-right tabular-nums text-gray-400">${fmt(r.price)}</td>
-                  <td className="py-2 text-right tabular-nums font-medium">
-                    {r.shares_to_buy === 0 ? '—' : `$${fmt(r.total_cost)}`}
-                  </td>
-                  <td className="py-2 text-xs text-gray-400">{r.reason}</td>
-                </tr>
-              ))}
+              {recs.map((r, i) => {
+                const { fromPct, toPct, onTarget } = recNotes[i]
+                return (
+                  <tr key={r.ticker} className={r.shares_to_buy === 0 ? 'opacity-50' : ''}>
+                    <td className="py-2 font-mono text-xs">{r.ticker.replace('.TO', '')}</td>
+                    <td className="py-2 tabular-nums">
+                      {r.shares_to_buy === 0 ? '—' : r.shares_to_buy}
+                    </td>
+                    <td className="py-2 tabular-nums text-gray-400">${fmt(r.price)}</td>
+                    <td className="py-2 tabular-nums font-medium">
+                      {r.shares_to_buy === 0 ? '—' : `$${fmt(r.total_cost)}`}
+                    </td>
+                    <td className={`py-2 text-xs truncate ${onTarget ? 'text-green-400' : 'text-red-400'}`}>
+                      {fromPct}% → {toPct}%
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
           {leftover !== null && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Leftover: <span className="tabular-nums">${fmt(leftover)}</span>
             </p>
           )}

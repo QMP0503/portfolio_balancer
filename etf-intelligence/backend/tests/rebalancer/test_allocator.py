@@ -8,7 +8,7 @@ import pytest
 from rebalancer.allocator import (
     BuyRecommendation,
     HoldingSnapshot,
-    _compute_deficits,
+    _compute_needed_cad,
     _compute_portfolio_values,
     compute_buy_recommendations,
 )
@@ -42,33 +42,48 @@ def test_portfolio_values_zero_shares() -> None:
 
 
 # ---------------------------------------------------------------------------
-# _compute_deficits
+# _compute_needed_cad
 # ---------------------------------------------------------------------------
 
-def test_deficits_excludes_overweight() -> None:
-    """Overweight tickers must not appear in deficits."""
-    # HXQ at 60% is overweight vs 40% target
-    values = {"HXQ.TO": 6000.0, "VFV.TO": 2000.0, "VCN.TO": 1000.0, "ZEM.TO": 1000.0}
-    total = sum(values.values())
-    deficits = _compute_deficits(values, total, TARGETS)
-    assert "HXQ.TO" not in deficits
+def test_needed_cad_excludes_ticker_above_target() -> None:
+    """A ticker whose value already exceeds its target in new_total is excluded."""
+    # HXQ at $50k, contribution $1k → new_total $51k, HXQ target 40% = $20.4k < $50k
+    values = {"HXQ.TO": 50_000.0, "VFV.TO": 0.0, "VCN.TO": 0.0, "ZEM.TO": 0.0}
+    new_total = 51_000.0
+    needed = _compute_needed_cad(values, new_total, TARGETS)
+    assert "HXQ.TO" not in needed
 
 
-def test_deficits_zero_total_value() -> None:
-    """When portfolio is empty, deficit equals full target for every ticker."""
+def test_needed_cad_empty_portfolio() -> None:
+    """When portfolio is empty, every ticker needs its full target share."""
     values = {t: 0.0 for t in TARGETS}
-    deficits = _compute_deficits(values, 0.0, TARGETS)
-    assert deficits == TARGETS
+    new_total = 1000.0
+    needed = _compute_needed_cad(values, new_total, TARGETS)
+    assert set(needed.keys()) == set(TARGETS.keys())
+    assert abs(needed["HXQ.TO"] - 400.0) < 0.01
+    assert abs(needed["VFV.TO"] - 350.0) < 0.01
+    assert abs(needed["VCN.TO"] - 150.0) < 0.01
+    assert abs(needed["ZEM.TO"] - 100.0) < 0.01
 
 
-def test_deficits_partial_underweight() -> None:
-    """Only genuinely underweight tickers appear."""
-    # VFV.TO at 50% (target 35%) is overweight; others at 0%
-    values = {"HXQ.TO": 0.0, "VFV.TO": 5000.0, "VCN.TO": 0.0, "ZEM.TO": 0.0}
-    total = 5000.0
-    deficits = _compute_deficits(values, total, TARGETS)
-    assert "VFV.TO" not in deficits
-    assert set(deficits.keys()) == {"HXQ.TO", "VCN.TO", "ZEM.TO"}
+def test_needed_cad_balanced_portfolio_with_contribution() -> None:
+    """A perfectly balanced portfolio still needs buys for every ticker
+    when a contribution is added — each ticker must grow proportionally."""
+    # $10k balanced: HXQ=$4k, VFV=$3.5k, VCN=$1.5k, ZEM=$1k → add $1k → new $11k
+    values = {"HXQ.TO": 4000.0, "VFV.TO": 3500.0, "VCN.TO": 1500.0, "ZEM.TO": 1000.0}
+    new_total = 11_000.0
+    needed = _compute_needed_cad(values, new_total, TARGETS)
+    assert set(needed.keys()) == set(TARGETS.keys())
+
+
+def test_needed_cad_overweight_excluded() -> None:
+    """Only tickers with a positive shortfall are returned."""
+    # VFV at 60% vs 35% target — excluded from needs
+    values = {"HXQ.TO": 0.0, "VFV.TO": 6000.0, "VCN.TO": 0.0, "ZEM.TO": 0.0}
+    new_total = 11_000.0
+    needed = _compute_needed_cad(values, new_total, TARGETS)
+    assert "VFV.TO" not in needed
+    assert "HXQ.TO" in needed
 
 
 # ---------------------------------------------------------------------------
@@ -89,9 +104,19 @@ def test_recommendations_do_not_overspend() -> None:
     assert total_spent <= 1200.0
 
 
-def test_recommendations_skip_overweight() -> None:
-    """An overweight ticker produces no recommendation."""
-    # HXQ at 80% — massively overweight vs 40% target
+def test_recommendations_all_four_tickers_on_balanced_portfolio() -> None:
+    """Adding contribution to a balanced portfolio should recommend all 4 tickers."""
+    prices = {"HXQ.TO": 100.0, "VFV.TO": 100.0, "VCN.TO": 100.0, "ZEM.TO": 100.0}
+    shares = {"HXQ.TO": 40, "VFV.TO": 35, "VCN.TO": 15, "ZEM.TO": 10}
+    holdings = _make_holdings(prices, shares)
+    recs = compute_buy_recommendations(1200.0, holdings, TARGETS)
+    tickers = {r.ticker for r in recs}
+    assert tickers == set(TARGETS.keys())
+
+
+def test_recommendations_skip_massively_overweight_ticker() -> None:
+    """A ticker so overweight its value exceeds its target in new_total gets no buy."""
+    # HXQ at $50k (97%) — even after $1200 contrib, target is only 40% of $51.2k = $20.5k < $50k
     prices = {"HXQ.TO": 50.0, "VFV.TO": 108.0, "VCN.TO": 68.0, "ZEM.TO": 40.0}
     shares = {"HXQ.TO": 1000, "VFV.TO": 0, "VCN.TO": 0, "ZEM.TO": 0}
     holdings = _make_holdings(prices, shares)
@@ -113,16 +138,6 @@ def test_unaffordable_ticker_included_with_zero_shares() -> None:
     assert zem.total_cost == 0.0
 
 
-def test_empty_recommendations_when_all_overweight() -> None:
-    """Returns empty list when every ticker is at or above target."""
-    prices = {"HXQ.TO": 100.0, "VFV.TO": 100.0, "VCN.TO": 100.0, "ZEM.TO": 100.0}
-    # Exact target weights — nothing is underweight
-    shares = {"HXQ.TO": 40, "VFV.TO": 35, "VCN.TO": 15, "ZEM.TO": 10}
-    holdings = _make_holdings(prices, shares)
-    recs = compute_buy_recommendations(1200.0, holdings, TARGETS)
-    assert recs == []
-
-
 def test_negative_contribution_raises() -> None:
     """Negative contribution must raise ValueError."""
     holdings = [HoldingSnapshot(ticker="VFV.TO", shares=10, price=100.0)]
@@ -130,11 +145,12 @@ def test_negative_contribution_raises() -> None:
         compute_buy_recommendations(-100.0, holdings, TARGETS)
 
 
-def test_reason_string_contains_deficit() -> None:
-    """Reason string must mention the underweight percentage."""
+def test_recommendations_have_pct_fields() -> None:
+    """Every recommendation must include current_pct and target_pct."""
     prices = {"HXQ.TO": 50.0, "VFV.TO": 108.0, "VCN.TO": 68.0, "ZEM.TO": 40.0}
     shares = {t: 0 for t in prices}
     holdings = _make_holdings(prices, shares)
     recs = compute_buy_recommendations(1200.0, holdings, TARGETS)
     for r in recs:
-        assert "underweight" in r.reason
+        assert r.current_pct == 0.0
+        assert r.target_pct == TARGETS[r.ticker]
