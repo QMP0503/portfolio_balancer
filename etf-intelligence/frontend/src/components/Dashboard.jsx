@@ -26,6 +26,7 @@ export default function Dashboard({ onLogout }) {
   const [showEditAlloc, setShowEditAlloc] = useState(false)
   const [banner, setBanner] = useState('')
   const [calcLoading, setCalcLoading] = useState(false)
+  const [spentFromAdds, setSpentFromAdds] = useState(0)
 
   // Load portfolios once on mount
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function Dashboard({ onLogout }) {
     if (!amount || amount <= 0) return
     setBanner('')
     setCalcLoading(true)
+    setSpentFromAdds(0)
     try {
       const data = await getRecommendations(selectedId, amount)
       setRecommendations(data)
@@ -71,12 +73,14 @@ export default function Dashboard({ onLogout }) {
     }
   }
 
-  async function handleHoldingAdded(ticker, sharesToAdd) {
+  async function handleHoldingAdded(ticker, sharesToAdd, costCad) {
     setHoldings((hs) => hs.map((h) => h.ticker === ticker ? { ...h, shares: h.shares + sharesToAdd } : h))
-    const amount = Number(contributionCad)
-    if (amount > 0) {
+    const newSpent = spentFromAdds + costCad
+    setSpentFromAdds(newSpent)
+    const remaining = Number(contributionCad) - newSpent
+    if (remaining > 0) {
       try {
-        const data = await getRecommendations(selectedId, amount)
+        const data = await getRecommendations(selectedId, remaining)
         setRecommendations(data)
       } catch (err) {
         setBanner(err.message)

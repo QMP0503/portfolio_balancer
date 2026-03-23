@@ -42,7 +42,7 @@ export default function BuyRecommendation({
     try {
       await updateHolding(portfolioId, r.ticker, currentShares + r.shares_to_buy)
       setAdded((s) => new Set(s).add(r.ticker))
-      onHoldingAdded(r.ticker, r.shares_to_buy)
+      onHoldingAdded(r.ticker, r.shares_to_buy, r.total_cost)
     } finally {
       setAdding((s) => { const n = new Set(s); n.delete(r.ticker); return n })
     }

@@ -25,7 +25,7 @@ function buildChartData(holdings, allocations, quotes) {
 }
 
 function StatusLabel({ diff }) {
-  if (Math.abs(diff) < 0.5) return <span className="text-gray-400 text-xs">on target</span>
+  if (Math.abs(diff) < 1) return <span className="text-gray-400 text-xs">on target</span>
   if (diff > 0) return <span className="text-red-400 text-xs">↓ overweight</span>
   return <span className="text-green-400 text-xs">↑ underweight</span>
 }
@@ -94,7 +94,7 @@ export default function Allocation({ holdings, allocations, quotes, onEdit }) {
             {data.map(({ ticker, diff }) => (
               <Cell
                 key={ticker}
-                fill={Math.abs(diff) < 0.5 ? '#374151' : diff > 0 ? '#7f3f3f' : '#2d5a8a'}
+                fill={Math.abs(diff) < 1 ? '#374151' : diff > 0 ? '#7f3f3f' : '#2d5a8a'}
               />
             ))}
           </Bar>
