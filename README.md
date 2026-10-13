@@ -2,6 +2,20 @@
 
 A self-hosted portfolio rebalancer that ingests minute-level market data for 4 Canadian ETFs, analyzes historical spread patterns, and tells you exactly what to buy on payday.
 
+> ## ⚠️ SERVICE NO LONGER RUNNING
+>
+> This system is **decommissioned and not deployed** as of October 2026.
+>
+> The `etf-intelligence` stack — FastAPI backend, React frontend, TimescaleDB and
+> nginx — was torn down on `mun-server` on 2026-10-13. Its application containers
+> had already been stopped since 2026-04-01.
+>
+> **Monitoring was removed along with it** — Prometheus, Grafana and node-exporter
+> are gone, together with all metrics history and Grafana configuration.
+>
+> The code is retained for reference only. Nothing here serves traffic, and the
+> setup instructions and monitoring references below are historical.
+
 ## What It Does
 
 - Ingests minute-level bid/ask/volume data for 4 Canadian ETFs every minute during market hours
